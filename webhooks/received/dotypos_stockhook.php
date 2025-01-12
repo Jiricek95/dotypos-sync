@@ -1,18 +1,17 @@
 <?php
 
-function dotypos_j_l_control_stockhook($data){
+function dotypos_sync_control_stockhook($data){
 global $wpdb;
-global $dotypos_j_l_table_name;
-    
-    $result = $wpdb->get_row( "SELECT sync_stock_from_dotypos FROM $dotypos_j_l_table_name");
-    if($result != null){
-        if($result->sync_stock_from_dotypos == 1){
-            dotypos_j_l_dotypos_stockhook_process($data);
-        }
+
+if(dotypos_sync_get_sync_setting('setting_from_dotypos_stockhook') === false){
+    return;
     }
+
+     dotypos_sync_dotypos_stockhook_process($data);
+
 }
 
-function dotypos_j_l_dotypos_stockhook_process($data){
+function dotypos_sync_dotypos_stockhook_process($data){
 
 
 foreach($data as $row){
@@ -62,9 +61,6 @@ if(!empty($woo_product_quantity) || $woo_product_quantity != null || $woo_produc
                     "new_quantity" => $new_quantity
                  ];
 
-                  $text = 'Změna stavu skladu z Dotykačky ->';
-                  $content = json_encode($request_body,true);
-                  central_logs($text,$content);
                
            }
         }else{

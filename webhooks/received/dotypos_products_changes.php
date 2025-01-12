@@ -1,33 +1,22 @@
 <?php
 
 //Přepis na databázi
-$table_name = $wpdb->prefix . 'dotypos_j_l_config';
+$table_name = $wpdb->prefix . 'dotypos_sync_config';
 
-function dotypos_j_l_control_updatehook($data){
+function dotypos_sync_control_updatehook($data){
 global $wpdb;
-global $dotypos_j_l_table_name;
 
 
-    
-    $result = $wpdb->get_row( "SELECT sync_price_from_dotypos,vat_sync FROM $dotypos_j_l_table_name");
-    if($result != null){
-        if($result->sync_price_from_dotypos == 1){
-            $vat_sync = $result->vat_sync;
-
-            dotypos_j_l_dotypos_product_update_process($data,$vat_sync);
-        }else{
-            return;
-        }
-    }else{
-        return;
+if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === false){
+    return;
     }
+    
+    dotypos_sync_dotypos_product_update_process($data,$vat_sync);
 
 }
 
-function dotypos_j_l_dotypos_product_update_process($data,$vat_sync){
+function dotypos_sync_dotypos_product_update_process($data,$vat_sync){
 
-
-    
 foreach($data as $row){
     
     
@@ -91,9 +80,6 @@ foreach($data as $row){
                     "price" => $price_with_vat,
                     "vat" => $vat
                 ];
-                $text = 'Změna produktu z Dotykačky ->';
-                $content = json_encode($change,true);
-                central_logs($text,$content);
 
             }else{
                 

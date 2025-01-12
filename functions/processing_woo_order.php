@@ -46,7 +46,7 @@ return;
                             $dotypos_product_id = dotypos_sync_dotypos_productid($sku);
                             if(!empty($dotypos_product_id) && $dotypos_product_id != null){
                                 $post_data = [
-                                    "dotypos_product_id" => $dotypos_product_id,
+                                    "dotypos_product_id" => $dotypos_product_id["dotypos_product_id"],
                                     "quantity" => $quantity,
                                     "note" => "WooCommerce - ".$order_id,
                                     "operation" => "sale"

@@ -69,7 +69,7 @@ function dotypos_sync_stock_button_action() {
                     wp_send_json_success($response_data);
             }
 
-            $dotypos_stock_status = dotypos_sync_dotypos_stock_status($dotypos_product_id);
+            $dotypos_stock_status = dotypos_sync_dotypos_stock_status($dotypos_product_id["dotypos_product_id"]);
 
             if(empty($dotypos_stock_status)){
                 $response_data = [
@@ -287,4 +287,44 @@ function dotypos_sync_product_by_sku($sku) {
     wp_send_json(["status" => "error", "messages" => "Sku is empty"]);
 }
 
+}
+
+//Získání změny ceny u produktu
+add_action('woocommerce_product_object_updated_props', 'check_regular_price_change_and_get_sku', 10, 2);
+
+function check_regular_price_change_and_get_sku($product, $changed_props) {
+
+    if(dotypos_sync_get_sync_setting('setting_from_woo_price') === false){
+        return;
+    }
+        
+    if (in_array('regular_price', $changed_props)) {
+        // Získání regular_price
+        $regular_price = $product->get_regular_price();
+
+        // Získání SKU
+        $sku = $product->get_sku();
+        if($sku != '' && $sku != null){
+
+            $dotypos_product_info = dotypos_sync_dotypos_productid($sku);
+
+            if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
+
+                $price_without_vat = $regular_price / $dotypos_product_info["vat"];
+
+                $woo_data = [
+                    "regular_price" => $regular_price,
+                    "sku" => $sku,
+                    "dotypos_product_id" => $dotypos_product_info["dotypos_product_id"],
+                    "eTag" => $dotypos_product_info["eTag"],
+                    "price_without_vat" => $price_without_vat
+                ];
+                
+                dotypos_sync_update_product($woo_data);
+
+            }
+        
+        }
+
+    }
 }

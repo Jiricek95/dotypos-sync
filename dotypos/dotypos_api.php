@@ -266,7 +266,7 @@ function dotypos_create_webhook($cloudid, $access_token, $webhook_data) {
 }
 
 function dotypos_sync_dotypos_productid($plu){
-    global $wpdb,$logger;
+    global $wpdb;
 
     $access_token_data = dotypos_sync_getDotyposAccessToken();
 
@@ -277,37 +277,61 @@ function dotypos_sync_dotypos_productid($plu){
         $request_url = 'https://api.dotykacka.cz/v2/clouds/'.$data["cloudid"].'/products?'.$filter;
 
 
-$curl = curl_init();
+        $curl = curl_init();
 
-curl_setopt_array($curl, array(
-  CURLOPT_URL => $request_url,
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_ENCODING => '',
-  CURLOPT_MAXREDIRS => 10,
-  CURLOPT_TIMEOUT => 0,
-  CURLOPT_FOLLOWLOCATION => true,
-  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-  CURLOPT_CUSTOMREQUEST => 'GET',
-  CURLOPT_HTTPHEADER => array(
-    'Accept: application/json; charset=UTF-8',
-    'Content-Type: application/json; charset=UTF-8',
-    'Authorization: Bearer '.$data["access_token"]
-  ),
-));
-
-$response = curl_exec($curl);
-$status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-central_logs("Odpověď funkce dotypos_sync_dotypos_productid() - \n Request -> {$request_url} \n Response -> {$response} \n Status code -> {$status_code}","","debug");  
-if(!empty($response)){
-    if($status_code == 200){
-
-        $data_response = json_decode($response,true);
-
-        if($data_response["totalItemsCount"] == 1){
-            return $data_response['data'][0]['id'];
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $request_url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HEADER => true, // Získání hlaviček v odpovědi
+            CURLOPT_HTTPHEADER => array(
+                'Accept: application/json; charset=UTF-8',
+                'Content-Type: application/json; charset=UTF-8',
+                'Authorization: Bearer ' . $data["access_token"]
+            ),
+        ));
+        
+        $response = curl_exec($curl);
+        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        
+        // Oddělení hlaviček od těla odpovědi
+        $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        $headers = substr($response, 0, $header_size);
+        $body = substr($response, $header_size);
+        
+        // Parsování hlaviček
+        $header_lines = explode("\r\n", $headers);
+        $etag = '';
+        foreach ($header_lines as $header_line) {
+            if (stripos($header_line, 'ETag:') === 0) {
+                $etag = trim(substr($header_line, 5));
+                break;
+            }
         }
+        
+        // Logování a práce s daty
+        central_logs("Odpověď funkce dotypos_sync_dotypos_productid() - \n Request -> {$request_url} \n Response -> {$body} \n Status code -> {$status_code} \n ETag -> {$etag}", "", "debug");
+        
+        if (!empty($body)) {
+            if ($status_code == 200) {
+                $data_response = json_decode($body, true);
+                if ($data_response["totalItemsCount"] == 1) {
+                    $return_data = [
+                        "dotypos_product_id" => $data_response['data'][0]['id'],
+                        "eTag" => $etag,
+                        "price_with_vat" => $data_response['data'][0]['priceWithVat'],
+                        "vat" => $data_response['data'][0]['vat']
+                    ];
 
-    }else{
+                    return $return_data;
+                }
+            
+        }else{
         //Logovat odpověď a status_code
         central_logs("Odpověď funkce dotypos_sync_dotypos_productid() - \n Request -> {$request_url} \n Response -> {$response} \n Status code -> {$status_code}","","debug");  
         central_logs("Request -> {$request_url} \n Response -> {$response} \n Status code -> {$status_code}","","info");        
@@ -491,4 +515,72 @@ if($request_url != null || $request_body_pre != null){
 }
 
 }
+
+function dotypos_sync_update_product($post_data){
+
+    $dotypos_product_id = $post_data["dotypos_product_id"] ? $post_data["dotypos_product_id"] : null;
+    $priceWithVat = $post_data["regular_price"] ? $post_data["regular_price"] : null;
+    $priceWithoutVat = $post_data["price_without_vat"] ? $post_data["price_without_vat"] : null;
+    $eTag = $post_data["eTag"] ? $post_data["eTag"] : null;
+    
+
+    if($dotypos_product_id != null || $eTag != null){
+        $access_token_data = dotypos_sync_getDotyposAccessToken();
+    
+        if(!empty($access_token_data)){
+    
+            $data = $access_token_data;
+
+            $request_url = 'https://api.dotykacka.cz/v2/clouds/'.$data["cloudid"].'/products/'.$post_data["dotypos_product_id"];
+
+            $request_body_pre = [
+                "priceWithoutVat" => $priceWithoutVat,
+                "priceWithVat" => $priceWithVat
+            ];
+    
+    if($request_url != null || $request_body_pre != null){
+        
+        $request_body = json_encode($request_body_pre,true);
+    
+    
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $request_url,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'PATCH',
+          CURLOPT_POSTFIELDS => $request_body,
+          CURLOPT_HTTPHEADER => array(
+            'Accept: application/json; charset=UTF-8',
+            'Content-Type: application/json; charset=UTF-8',
+            'Authorization: Bearer '.$data["access_token"],
+            'If-Match: '.$eTag
+          ),
+        ));
+        
+        $response = curl_exec($curl);
+        
+        curl_close($curl);
+        $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        central_logs("Odpověď funkce dotypos_sync_update_product() - \n Request -> {$request_url} \n Request body -> {$request_body} \n Response -> {$response} \n Status code -> {$status_code}","","debug");  
+    
+        if($status_code == 200){
+        
+        }else{
+            
+    
+        }
+    
+    }
+    
+    
+        }
+    }
+    
+    }
 ?>
