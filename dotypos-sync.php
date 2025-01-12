@@ -22,7 +22,7 @@ if (!defined("ABSPATH")) {
     exit();
 }
 
-// Define plugin version (for internal use)
+// Define plugin version (for internal use)sss
 define("DOTYPOSSYNC_VERSION", "2.0.0");
 
 // Plugin Root File
