@@ -22,7 +22,7 @@ if (!defined("ABSPATH")) {
     exit();
 }
 
-// Define plugin version (for internal use)sss
+// Define plugin version (for internal use)
 define("DOTYPOSSYNC_VERSION", "2.0.0");
 
 // Plugin Root File
@@ -137,53 +137,51 @@ function dotypos_sync_add_admin_menu()
     );
 }
 
-// Registrace skriptů
 add_action("admin_enqueue_scripts", "dotypos_sync_enqueue_scripts");
 function dotypos_sync_enqueue_scripts($hook)
 {
-    // Načtení skriptů pouze na specifické stránce (pokud máš stránku nastavení pluginu)
-    // Nahraď 'my-plugin-page' názvem tvé stránky
-    if ($hook !== "toplevel_page_dotypos-setting") {
-        return;
+    // Načtení skriptů pouze na stránce nastavení pluginu nebo detailu produktu
+    if ($hook === "toplevel_page_dotypos-setting" || $hook === "post.php") {
+        // Načti jQuery (není nutné explicitně kontrolovat, zda je již enqueued, pokud používáš jako závislost)
+        wp_enqueue_script(
+            "sweetalert",
+            "https://cdn.jsdelivr.net/npm/sweetalert2@10",
+            ["jquery"],
+            null,
+            true
+        );
+        wp_enqueue_script(
+            "scripts",
+            DOTYPOSSYNC_PLUGIN_URL . "js/scripts.js",
+            ["jquery"],
+            null,
+            true
+        );
+        wp_enqueue_script(
+            "loader-scripts",
+            DOTYPOSSYNC_PLUGIN_URL . "js/libraries/loader.js",
+            ["jquery"],
+            null,
+            true
+        );
+
+        // Načti CSS
+        wp_enqueue_style(
+            "dotypos-sync-style",
+            DOTYPOSSYNC_PLUGIN_URL . "/pages/style/style.css",
+            [],
+            "1.0.0",
+            "all"
+        );
+
+        // Localize script (pro AJAX)
+        wp_localize_script("scripts", "dotypos_scripts", [
+            "ajax_url" => admin_url("admin-ajax.php"),
+            "html_path" => DOTYPOSSYNC_PLUGIN_URL . "pages/include/", // Absolutní URL k HTML složce
+        ]);
     }
-
-    // Načti jQuery (není nutné explicitně kontrolovat, zda je již enqueued, pokud používáš jako závislost)
-    wp_enqueue_script(
-        "sweetalert",
-        "https://cdn.jsdelivr.net/npm/sweetalert2@10",
-        ["jquery"],
-        null,
-        true
-    );
-    wp_enqueue_script(
-        "scripts",
-        DOTYPOSSYNC_PLUGIN_URL . "js/scripts.js",
-        ["jquery"],
-        null,
-        true
-    );
-    wp_enqueue_script(
-        "loader-scripts",
-        DOTYPOSSYNC_PLUGIN_URL . "js/libraries/loader.js",
-        ["jquery"],
-        null,
-        true
-    );
-    //css
-    wp_enqueue_style(
-        "dotypos-sync-style",
-        DOTYPOSSYNC_PLUGIN_URL . "/pages/style/style.css",
-        [],
-        "1.0.0",
-        "all"
-    );
-
-    // Localize script (pro AJAX)
-    wp_localize_script("scripts", "dotypos_scripts", [
-        "ajax_url" => admin_url("admin-ajax.php"),
-        "html_path" => DOTYPOSSYNC_PLUGIN_URL . "pages/include/", // Absolutní URL k HTML složce
-    ]);
 }
+
 
 // Funkce, která zobrazí obsah stránky nastavení
 function dotypos_page()
@@ -507,14 +505,16 @@ add_action( 'parse_request', function( $wp ){
 function central_logs($text,$content,$mode){
 
     global $wpdb;
-
+/*
     $result = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT value FROM " . DOTYPOSSYNC_TABLE_NAME . " WHERE `key` = %s",
             "debug_log"
         )
     );
+*/
 
+$result = 1;
     if (!empty($result) && $result == 1 && $mode == 'debug') {
 
             $logger = wc_get_logger();
@@ -579,4 +579,61 @@ function load_checkbox_settings() {
     } else {
         wp_send_json_error('Žádné nastavení nenalezeno.');
     }
+}
+
+function dotypos_sync_get_stock_sync_from_dotypos(){
+
+    global $wpdb;
+
+    $result = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT value FROM " . DOTYPOSSYNC_TABLE_NAME . " WHERE `key` = %s",
+            "setting_from_dotypos_stockhook"
+        )
+    );
+
+    if (!empty($result) || $result == 1) {
+        // Hodnota existuje a není prázdná
+        return true;
+    } else {
+        // Hodnota pro daný klíč neexistuje nebo je prázdná
+        return false;
+    }
+
+}
+function dotypos_sync_get_stock_sync_from_woo(){
+
+    global $wpdb;
+
+    $result = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT value FROM " . DOTYPOSSYNC_TABLE_NAME . " WHERE `key` = %s",
+            "setting_from_woo_stockhook"
+        )
+    );
+
+    if (!empty($result) || $result == 1) {
+        // Hodnota existuje a není prázdná
+        return true;
+    } else {
+        // Hodnota pro daný klíč neexistuje nebo je prázdná
+        return false;
+    }
+    
+}
+
+function dotypos_sync_get_sync_setting($setting_key){
+
+    global $wpdb;
+
+    $result = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT value FROM " . DOTYPOSSYNC_TABLE_NAME . " WHERE `key` = %s",
+            $setting_key
+        )
+    );
+
+    // Vrácení true nebo false
+    return (!empty($result) || $result == 1);
+
 }

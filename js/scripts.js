@@ -221,12 +221,12 @@ function jl_deleteIntegration(event, element) {
     if (confirmation) {
         // AJAX požadavek
         jQuery.ajax({
-            url: my_ajax_object.ajax_url, // URL získaná z PHP
+            url: dotypos_scripts.ajax_url, // URL získaná z PHP
             type: 'POST',
             data: {
                 action: 'delete_connection', // Název akce
                 id: connectionId, // ID propojení
-                nonce: my_ajax_object.nonce, // Nonce pro zabezpečení
+                nonce: dotypos_scripts.nonce, // Nonce pro zabezpečení
             },
             success: function(response) {
                 if (response.success) {
@@ -302,4 +302,190 @@ function load_setting_sync() {
     });
 
 
+}
+
+//Práce se skladem v administraci
+jQuery(document).ready(function($) {
+    // Move custom buttons for simple products
+    if (jQuery('#custom-stock-buttons').length) {
+        jQuery('#custom-stock-buttons').insertAfter('.form-field._stock_field');
+    }
+
+
+    $('#from_dotypos').on('click', function(event) {
+        event.preventDefault();
+        var $button = $(this);
+        var stock = $('#_stock').val();
+        var sku = $('#_sku').val();
+        var postId = $(this).attr('data-id');
+        var setting = $(this).attr('setting-id');
+        $('.response-msg').empty();
+
+        // Uloží původní text tlačítka
+        var originalText = $button.html();
+
+        if (typeof sku !== 'undefined' && sku !== null && sku.length > 0) {
+
+
+
+            // Nahradí text tlačítka spinnerem
+            $button.html('<span class="spinner is-active" style="float:none; margin-left: 5px; visibility: visible;"></span> Načítám...');
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'custom_stock_button_listen',
+                    product_id: postId,
+                    sku: sku,
+                    stock: stock,
+                    doAction: 'stock_from_dotypos_product',
+                    setting: setting
+                },
+                success: function(response) {
+                    $button.html(originalText);
+                    //$('.response-msg').text(response.data.response_msg);
+                    showCustomAlert(response.data.response_msg, response.data.actionType);
+
+
+                    $('#_stock').text(response.data.new_stock.stock_status);
+                    $('#_stock').attr('value', response.data.new_stock.stock_status);
+
+                }
+            });
+
+        } else {
+            $('.response-msg').text('Není vyplněno SKU');
+        }
+
+    });
+
+    $('#to_dotypos').on('click', function() {
+        event.preventDefault();
+        var $button = $(this);
+        var stock = $('#_stock').val();
+        var sku = $('#_sku').val();
+        var postId = $(this).attr('data-id');
+        var setting = $(this).attr('setting-id');
+        $('.response-msg').empty();
+
+        // Uloží původní text tlačítka
+        var originalText = $button.html();
+
+        if (typeof sku !== 'undefined' && sku !== null && sku.length > 0) {
+
+            // Nahradí text tlačítka spinnerem
+            $button.html('<span class="spinner is-active" style="float:none; margin-left: 5px; visibility: visible;"></span> Načítám...');
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'custom_stock_button_listen',
+                    product_id: postId,
+                    sku: sku,
+                    stock: stock,
+                    doAction: 'stock_to_dotypos_product',
+                    setting: setting
+                },
+                success: function(response) {
+                    $button.html(originalText);
+                    //$('.response-msg').text(response.data.response_msg);
+                    showCustomAlert(response.data.response_msg, response.data.actionType);
+
+                }
+            });
+        } else {
+            $('.response-msg').text('Není vyplněno SKU');
+        }
+
+
+    });
+
+
+    // Handle clicks on the custom buttons for variations
+    $(document).on('click', '.custom-variant-stock-button', function(event) {
+        event.preventDefault(); // Zabraň aktualizaci stránky
+        var $button = $(this);
+        var variationId = $button.data('variation-id');
+        var buttonId = $button.hasClass('button-primary') ? 1 : 2;
+        var $variationForm = $button.closest('.woocommerce_variation');
+        var doAction = $button.attr('id');
+        var setting = $(this).attr('setting-id');
+        $('.response-msg').empty();
+        // Uloží původní text tlačítka
+        var originalText = $button.html();
+
+        // Calculate the index of the clicked variation
+        var index = $('.woocommerce_variation').index($variationForm);
+
+        // Retrieve SKU and stock status for the clicked variant
+        var sku = $variationForm.find('input[name="variable_sku[' + index + ']"]').val();
+        var stock = $variationForm.find('input[name="variable_stock[' + index + ']"]').val();
+
+
+
+        if (typeof sku !== 'undefined' && sku !== null && sku.length > 0) {
+
+            // Nahradí text tlačítka spinnerem
+            $button.html('<span class="spinner is-active" style="float:none; margin-left: 5px; visibility: visible;"></span> Načítám...');
+
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'custom_stock_button_listen',
+                    product_id: variationId,
+                    sku: sku,
+                    stock: stock,
+                    doAction: doAction,
+                    setting: setting
+                },
+                success: function(response) {
+                    $button.html(originalText);
+                    //$('.response-msg').text(response.data.response_msg);
+                    showCustomAlert(response.data.response_msg, response.data.actionType);
+
+                    if (doAction == 'variant_stock_from_dotypos') {
+                        $($variationForm.find('input[name="variable_stock[' + index + ']"]')).text(response.data.new_stock.stock_status);
+                        $($variationForm.find('input[name="variable_stock[' + index + ']"]')).attr('value', response.data.new_stock.stock_status);
+                    }
+
+                }
+            });
+
+        }
+
+    });
+});
+
+function showCustomAlert(message, actionType) {
+
+    console.log(actionType);
+
+    actionType = actionType ? actionType : 'cancel';
+
+    console.log(actionType);
+
+    Swal.fire({
+        title: message,
+        text: '',
+        icon: 'info',
+        confirmButtonText: 'OK',
+        allowOutsideClick: false,
+        allowEscapeKey: false
+    }).then(() => {
+        if (actionType === 'save') {
+            // Akce pro "confirm"
+            var saveButton = document.getElementById('save-post');
+            if (saveButton) {
+                saveButton.click(); // Kliknutí na tlačítko pro uložení produktu
+            } else {
+                document.getElementById('publish').click();
+            }
+        } else if (actionType === 'cancel') {
+
+        }
+    });
 }
