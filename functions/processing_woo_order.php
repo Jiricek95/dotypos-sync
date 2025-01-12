@@ -49,6 +49,7 @@ function process_order_items($order) {
                     return;
                 }
             } else {
+
                 $logger = wc_get_logger();
                 $context = array('source' => 'dotypos-j-l');
                 $logger->log('info', 'Objednávka - ' . $order_id . ' - Neobsahuje produkty Admin', $context);
@@ -56,6 +57,7 @@ function process_order_items($order) {
         
     } else {
         $logger = wc_get_logger();
+        
         $context = array('source' => 'dotypos-j-l');
         $logger->log('error', 'Hook received an unexpected type: ' . gettype($order), $context);
     }
