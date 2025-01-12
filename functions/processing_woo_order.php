@@ -9,6 +9,10 @@ function process_order_items($order) {
     global $wpdb;
     global $processing_order;
 
+if(dotypos_sync_get_sync_setting('setting_from_woo_stockhook') === false){
+return;
+}
+
     $processing_order = true; // Nastavení flagu na true
 
     // Kontrola, zda je $order objekt nebo ID
@@ -27,10 +31,6 @@ function process_order_items($order) {
 
             
             if (!empty($items)) {
-                $dotypos_j_l_table_name = $wpdb->prefix . 'dotypos_j_l_config';
-                // Přepis na databázi
-                $result = $wpdb->get_row("SELECT sync_stock_from_woo FROM $dotypos_j_l_table_name ");
-                if ($result != null && $result->sync_stock_from_woo == 1) {
                     foreach ($items as $item) {
                         $product_id = $item->get_product_id();
                         $product = $item->get_product();
@@ -45,11 +45,8 @@ function process_order_items($order) {
                             dotypos_j_l_send_order_item_to_dotypos($product_id, $sku, $quantity, $order_id,$refund);
                         }
                     }
-                } else {
-                    return;
-                }
-            } else {
 
+            } else {
                 $logger = wc_get_logger();
                 $context = array('source' => 'dotypos-j-l');
                 $logger->log('info', 'Objednávka - ' . $order_id . ' - Neobsahuje produkty Admin', $context);
@@ -57,12 +54,14 @@ function process_order_items($order) {
         
     } else {
         $logger = wc_get_logger();
-        
         $context = array('source' => 'dotypos-j-l');
         $logger->log('error', 'Hook received an unexpected type: ' . gettype($order), $context);
     }
 
+
+
     $processing_order = false; // Nastavení flagu zpět na false
+
 }
 
 
