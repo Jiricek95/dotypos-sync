@@ -391,7 +391,7 @@ curl_close($curl);
 function dotypos_sync_send_stock_dotypos($post_data){
 
 $dotypos_product_id = $post_data["dotypos_product_id"] ? $post_data["dotypos_product_id"] : null;
-$quantity = $post_data["new_stock"] ? $post_data["new_stock"] : null;
+$quantity = $post_data["quantity"] ? $post_data["quantity"] : null;
 $purchase_price = $post_data["purchase_price"] ? $post_data["purchase_price"] : null;
 $operation = $post_data["operation"] ? $post_data["operation"] : null;
 $note = $post_data["note"] ? $post_data["note"] : null;
@@ -428,11 +428,11 @@ $request_body_pre = [
 $request_url = 'https://api.dotykacka.cz/v2/clouds/'.$data["cloudid"].'/warehouses/'.$data["warehouse_id"].'/sales';
 
 $request_body_pre = [
-    "note" => $note,
     "items" => [
         [
             "_productId" => $dotypos_product_id,
-            "quantity" => $quantity
+            "quantity" => $quantity,
+            "note" => $note
         ]
     ]
 ];

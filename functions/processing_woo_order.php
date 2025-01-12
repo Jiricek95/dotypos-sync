@@ -42,20 +42,28 @@ return;
                             $refund = 1;
                         }
                         if (!empty($sku)) {
-                            dotypos_j_l_send_order_item_to_dotypos($product_id, $sku, $quantity, $order_id,$refund);
+
+                            $dotypos_product_id = dotypos_sync_dotypos_productid($sku);
+                            if(!empty($dotypos_product_id) && $dotypos_product_id != null){
+                                $post_data = [
+                                    "dotypos_product_id" => $dotypos_product_id,
+                                    "quantity" => $quantity,
+                                    "note" => "WooCommerce - ".$order_id,
+                                    "operation" => "sale"
+                                ];
+                                central_logs('Order - '.json_encode($post_data,true),'','debug');
+                                dotypos_sync_send_stock_dotypos($post_data);
+                            }
+
                         }
                     }
 
             } else {
-                $logger = wc_get_logger();
-                $context = array('source' => 'dotypos-j-l');
-                $logger->log('info', 'Objednávka - ' . $order_id . ' - Neobsahuje produkty Admin', $context);
+
             }
         
     } else {
-        $logger = wc_get_logger();
-        $context = array('source' => 'dotypos-j-l');
-        $logger->log('error', 'Hook received an unexpected type: ' . gettype($order), $context);
+
     }
 
 
@@ -66,7 +74,7 @@ return;
 
 
 function process_order_status_change($order_id, $old_status, $new_status, $order) {
-     // Zpracování objednávky, pokud se stav změní z "draft" na cokoliv jiného než "cancelled"s
+     // Zpracování objednávky, pokud se stav změní z "draft" na cokoliv jiného než "cancelled"
      if($old_status != 'cancelled' || $old_status != 'refunded'){
     if ($new_status == 'cancelled' || $new_status == 'refunded') {
         process_order_items($order_id);

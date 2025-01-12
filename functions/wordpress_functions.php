@@ -157,7 +157,7 @@ function dotypos_sync_stock_button_action() {
 
             $post_data = [
                 "dotypos_product_id"=> $dotypos_product_id,
-                "new_stock"=>$new_stock_status_form_dotypos,
+                "quantity"=>$new_stock_status_form_dotypos,
                 "purchase_price"=>$dotypos_stock_status["purchase_price"],
                 "operation"=>"stockup",
                 "note"=>""

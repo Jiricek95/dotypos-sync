@@ -44,6 +44,8 @@ require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/dotypos_functions.php";
 require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/wordpress_functions.php";
 //Dotpos GET API
 require_once DOTYPOSSYNC_PLUGIN_DIR . "dotypos/dotypos_api.php";
+//Order porcess
+require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/processing_woo_order.php";
 
 // Kontrola verze pro dbDelta
 require_once ABSPATH . "wp-admin/includes/upgrade.php";
