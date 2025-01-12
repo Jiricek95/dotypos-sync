@@ -66,7 +66,7 @@ return;
 
 
 function process_order_status_change($order_id, $old_status, $new_status, $order) {
-     // Zpracování objednávky, pokud se stav změní z "draft" na cokoliv jiného než "cancelled"
+     // Zpracování objednávky, pokud se stav změní z "draft" na cokoliv jiného než "cancelled"s
      if($old_status != 'cancelled' || $old_status != 'refunded'){
     if ($new_status == 'cancelled' || $new_status == 'refunded') {
         process_order_items($order_id);
