@@ -1,0 +1,76 @@
+#content {
+    position: relative;
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+    overflow: visible;
+    min-height: 100px;
+    /* Případně minimální výška pro zobrazení */
+    display: block;
+    /* Standardní block layout, který automaticky přizpůsobí výšku obsahu */
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+#guide {
+    position: relative;
+    /* Změněno z absolutního na relativní */
+    width: 100%;
+    height: auto;
+    /* Automaticky přizpůsobí výšku podle obsahu */
+    overflow: hidden;
+    margin-top: 20px;
+    /* Přidá mezery mezi guide a další obsah */
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.step {
+    display: none;
+    /* Skryje všechny kroky kromě aktivního */
+    position: relative;
+    /* Už nebude absolutně pozicováno, což způsobovalo problémy s výškou */
+    width: 100%;
+    transition: left 0.5s ease-in-out;
+}
+
+.step.active {
+    display: block;
+    /* Zobrazí aktuální krok */
+}
+
+.step.exit-left {
+    left: -100%;
+}
+
+.jl-delete-icon {
+    color: red;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.cloudid {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+#dotypos_cloud {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+#dotypos_cloud>div {
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+
+.setting-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}

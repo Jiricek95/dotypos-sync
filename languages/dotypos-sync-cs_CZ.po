@@ -1,0 +1,2 @@
+msgid "https://developer.wordpress.org/plugins/settings/settings-api/"
+msgstr "https://developer.wordpress.org/plugins/settings/settings-api/"

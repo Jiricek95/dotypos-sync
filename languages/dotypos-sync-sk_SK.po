@@ -1,0 +1,47 @@
+msgid "Vyberte sklad"
+msgstr "Vyberte sklad"
+
+msgid "Potvrdit"
+msgstr "Potvrdiť"
+
+msgid "Vybraný sklad"
+msgstr "Vybraný sklad"
+
+msgid "Synchronizace z Dotykačky"
+msgstr "Synchronizácia z Dotykačky"
+
+msgid "Synchronizace cen z Dotykačky"
+msgstr "Synchronizácia cien z Dotykačky"
+
+msgid "Synchronizace názvu z Dotykačky"
+msgstr "Synchronizácia názvu z Dotykačky"
+
+msgid "Synchronizace z WooCommerce"
+msgstr "Synchronizácia z WooCommerce"
+
+msgid "Synchronizace cen z WooCommerce"
+msgstr "Synchronizácia cien z WooCommerce"
+
+msgid "Synchronizace názvu z WooCommerce"
+msgstr "Synchronizácia názvu z WooCommerce"
+
+msgid "Synchronizace skladových pohybů"
+msgstr "Synchronizácia skladových pohybov"
+
+msgid "Z Dotykačky do WooCommerce"
+msgstr "Z Dotykačky do WooCommerce"
+
+msgid "Z WooCommerce do Dotykačka"
+msgstr "Z WooCommerce do Dotykačky"
+
+msgid "Přenos produktů z Dotykačky do WooCommerce"
+msgstr "Prenos produktov z Dotykačky do WooCommerce"
+
+msgid "Spustit přenos produktů"
+msgstr "Spustiť prenos produktov"
+
+msgid "Přenos stavu skladu z Dotykačky do WooCommerce"
+msgstr "Prenos stavu skladu z Dotykačky do WooCommerce"
+
+msgid "Spustit přenos stavu skladu"
+msgstr "Spustiť prenos stavu skladu"

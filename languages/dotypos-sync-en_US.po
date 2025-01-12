@@ -1,0 +1,47 @@
+msgid "Vyberte sklad"
+msgstr "Select a warehouse"
+
+msgid "Potvrdit"
+msgstr "Confirm"
+
+msgid "Vybraný sklad"
+msgstr "Selected warehouse"
+
+msgid "Synchronizace z Dotykačky"
+msgstr "Synchronization from Dotypos"
+
+msgid "Synchronizace cen z Dotykačky"
+msgstr "Price synchronization from Dotypos"
+
+msgid "Synchronizace názvu z Dotykačky"
+msgstr "Name synchronization from Dotypos"
+
+msgid "Synchronizace z WooCommerce"
+msgstr "Synchronization from WooCommerce"
+
+msgid "Synchronizace cen z WooCommerce"
+msgstr "Price synchronization from WooCommerce"
+
+msgid "Synchronizace názvu z WooCommerce"
+msgstr "Name synchronization from WooCommerce"
+
+msgid "Synchronizace skladových pohybů"
+msgstr "Stock movement synchronization"
+
+msgid "Z Dotykačky do WooCommerce"
+msgstr "From Dotypos to WooCommerce"
+
+msgid "Z WooCommerce do Dotykačka"
+msgstr "From WooCommerce to Dotypos"
+
+msgid "Přenos produktů z Dotykačky do WooCommerce"
+msgstr "Transfer products from Dotypos to WooCommerce"
+
+msgid "Spustit přenos produktů"
+msgstr "Start product transfer"
+
+msgid "Přenos stavu skladu z Dotykačky do WooCommerce"
+msgstr "Transfer stock status from Dotypos to WooCommerce"
+
+msgid "Spustit přenos stavu skladu"
+msgstr "Start stock status transfer"
