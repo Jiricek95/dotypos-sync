@@ -115,12 +115,12 @@ register_uninstall_hook(__FILE__, "dotypos_sync_uninstall");
 //Odstranění při odmazání doplňku
 function dotypos_sync_uninstall()
 {
-    /*
-    global $wpdb,$dotypos_sync_table_name;
+    
+    global $wpdb;
 
-    $sql = "DROP TABLE IF EXISTS $dotypos_sync_table_name;";
+    $sql = "DROP TABLE IF EXISTS ".DOTYPOSSYNC_TABLE_NAME.";";
     $wpdb->query($sql);
-    */
+    
 }
 
 // Přidání akce do WordPress, která zaregistruje vaši funkci menu
