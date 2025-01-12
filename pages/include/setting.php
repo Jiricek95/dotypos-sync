@@ -46,7 +46,7 @@
         <h2><?php _e('Synchronizace skladových pohybů', 'dotypos_sync'); ?></h2>
         <div class="setting-content">
             <label>
-                <input type="checkbox" class="setting-checkbox" data-id="setting_from_woo_stockhook" />
+                <input type="checkbox" class="setting-checkbox" data-id="setting_from_dotypos_stockhook" />
                 <?php _e('Z Dotykačky do WooCommerce', 'dotypos_sync'); ?>
             </label>
             <label>
