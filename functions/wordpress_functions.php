@@ -374,8 +374,22 @@ function dotypos_sync_get_taxes_wc() {
 //Tvorba nového produktu
 //add_action('woocommerce_new_product', 'moje_funkce_pri_novem_produktu', 10, 1);
 
-
 //Získání id produktu na základě sku
-function dotypos_sync_get_product_id_by_sku(){
-    
+function dotypos_sync_get_product_id_by_sku($sku){
+
+    global $wpdb;
+
+            $result = $wpdb->get_result(
+            $wpdb->prepare(
+                "SELECT post_id FROM {$wpdb->prefix}postmeta WHERE `meta_key` = _sku `meta_value` = %s LIMIT 1",
+                $sku
+            ),
+            ARRAY_A
+        );
+
+        if(!$result){
+            return $result;
+        }
+
+        return null;
 }
