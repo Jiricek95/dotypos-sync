@@ -1,30 +1,40 @@
-name: Generate Installable Plugin, and Upload as Release Asset
+name: Generate Installable Plugin and Upload as Release Asset
+
 on:
   release:
     types: [published]
+
 jobs:
   build:
     name: Upload Release Asset
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build project
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+
+      - name: Install Composer dependencies
         run: |
           composer install --no-dev --optimize-autoloader
-          mkdir build
-      - name: Create artifact
-        uses: montudor/action-zip@v0.1.0
+
+      - name: Prepare build directory
+        run: |
+          mkdir -p build/dotypos-sync-main
+          rsync -av --exclude={'.git*','node_modules','CODE_OF_CONDUCT.md','CONTRIBUTING.md','ISSUE_TEMPLATE.md','PULL_REQUEST_TEMPLATE.md','*.dist','composer.*','dev-helpers','build'} ./ build/dotypos-sync-main/
+          
+      - name: Create ZIP package
+        run: |
+          cd build
+          zip -r dotypos-sync-main.zip dotypos-sync-main
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          args: zip -X -r build/graphql-api.zip . -x *.git* node_modules/\* .* "*/\.*" CODE_OF_CONDUCT.md CONTRIBUTING.md ISSUE_TEMPLATE.md PULL_REQUEST_TEMPLATE.md *.dist composer.* dev-helpers** build**
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-            name: graphql-api
-            path: build/graphql-api.zip
-      - name: Upload to release
-        uses: JasonEtco/upload-to-release@master
-        with:
-          args: build/graphql-api.zip application/zip
+          files: build/dotypos-sync-main.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
