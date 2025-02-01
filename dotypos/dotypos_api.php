@@ -325,7 +325,8 @@ function dotypos_sync_dotypos_productid($plu){
                         "dotypos_product_id" => $data_response['data'][0]['id'],
                         "eTag" => $etag,
                         "price_with_vat" => $data_response['data'][0]['priceWithVat'],
-                        "vat" => $data_response['data'][0]['vat']
+                        "vat" => $data_response['data'][0]['vat'],
+                        "name" => $data_response['data'][0]['name']
                     ];
 
                     return $return_data;
@@ -519,10 +520,10 @@ if($request_url != null || $request_body_pre != null){
 function dotypos_sync_update_product($post_data){
 
     $dotypos_product_id = $post_data["dotypos_product_id"] ? $post_data["dotypos_product_id"] : null;
-    $priceWithVat = $post_data["regular_price"] ? $post_data["regular_price"] : null;
+    $priceWithVat = $post_data["regular_price"];
     $priceWithoutVat = $post_data["price_without_vat"] ? $post_data["price_without_vat"] : null;
     $eTag = $post_data["eTag"] ? $post_data["eTag"] : null;
-    
+    $name = $post_data["name"];
 
     if($dotypos_product_id != null || $eTag != null){
         $access_token_data = dotypos_sync_getDotyposAccessToken();
@@ -535,7 +536,8 @@ function dotypos_sync_update_product($post_data){
 
             $request_body_pre = [
                 "priceWithoutVat" => $priceWithoutVat,
-                "priceWithVat" => $priceWithVat
+                "priceWithVat" => $priceWithVat,
+                "name"=>$name,
             ];
     
     if($request_url != null || $request_body_pre != null){

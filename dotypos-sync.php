@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.2
+ * @version       2.0.3
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.2
+ * Version:       2.0.3
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.2");
+define("DOTYPOSSYNC_VERSION", "2.0.3");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -137,94 +137,6 @@ function dotypos_sync_add_admin_menu()
         "dashicons-admin-generic", // Ikona menu
         20 // Pozice v menu
     );
-}
-
-add_filter('site_transient_update_plugins', 'github_check_for_updates');
-add_filter('plugins_api', 'github_plugin_info', 10, 3);
-
-function github_check_for_updates($transient) {
-    if (empty($transient->checked)) {
-        return $transient;
-    }
-
-    // Základní informace o pluginu
-    $plugin_slug = plugin_basename(__FILE__); // Dynamicky získaná cesta k hlavnímu souboru
-    $current_version = DOTYPOSSYNC_VERSION; // Použití konstanty definované ve vašem pluginu
-
-    // GitHub API URL pro získání poslední verze
-    $github_api_url = 'https://api.github.com/repos/Jiricek95/new_dotypos_woo/releases/latest';
-
-    // Získání informací z GitHub API
-    $response = wp_remote_get($github_api_url, [
-        'headers' => [
-            'Accept' => 'application/vnd.github.v3+json',
-            'Authorization' => 'Bearer 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',
-        ],
-    ]);
-
-    if (is_wp_error($response)) {
-        return $transient; // Pokud dojde k chybě, vrátí se původní hodnota
-    }
-
-    $release = json_decode(wp_remote_retrieve_body($response), true);
-
-    // Získání poslední verze z tagu
-    if (!empty($release['tag_name'])) {
-        $latest_version = ltrim($release['tag_name'], 'v'); // Odebrání "v" na začátku tagu
-
-        // Porovnání verzí
-        if (version_compare($current_version, $latest_version, '<')) {
-            $transient->response[$plugin_slug] = (object) [
-                'slug' => $plugin_slug,
-                'new_version' => $latest_version,
-                'url' => 'https://github.com/Jiricek95/new_dotypos_woo',
-                'package' => $release['zipball_url'], // URL ZIP balíčku pro stažení
-            ];
-        }
-    }
-
-    return $transient;
-}
-
-function github_plugin_info($result, $action, $args) {
-    // Kontrola akce a slug pluginu
-    if ($action !== 'plugin_information' || $args->slug !== plugin_basename(__FILE__)) {
-        return $result;
-    }
-
-    // GitHub API URL pro získání poslední verze
-    $github_api_url = 'https://api.github.com/repos/Jiricek95/new_dotypos_woo/releases/latest';
-
-    // Získání informací z GitHub API
-    $response = wp_remote_get($github_api_url, [
-        'headers' => [
-            'Accept' => 'application/vnd.github.v3+json',
-            'Authorization' => 'Bearer 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',
-        ],
-    ]);
-    if (is_wp_error($response)) {
-        return false;
-    }
-
-    $release = json_decode(wp_remote_retrieve_body($response), true);
-
-    if (!empty($release['tag_name'])) {
-        $latest_version = ltrim($release['tag_name'], 'v');
-
-        return (object) [
-            'name' => 'DotyPos Sync',
-            'slug' => plugin_basename(__FILE__),
-            'version' => $latest_version,
-            'author' => '<a href="https://liskajiri.cz">Jiří Liška</a>',
-            'homepage' => 'https://github.com/Jiricek95/new_dotypos_woo',
-            'download_link' => $release['zipball_url'],
-            'sections' => [
-                'description' => 'Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou.',
-            ],
-        ];
-    }
-
-    return $result;
 }
 
 
@@ -653,7 +565,7 @@ add_action('wp_ajax_load_checkbox_settings', 'load_checkbox_settings');
 function load_checkbox_settings() {
     global $wpdb;
 
-    $table_name = DOTYPOSSYNC_TABLE_NAME; // Vaše tabulka
+   
     $results = $wpdb->get_results(
         $wpdb->prepare(
             "SELECT `key`, `value` FROM ".DOTYPOSSYNC_TABLE_NAME." WHERE `key` LIKE %s",

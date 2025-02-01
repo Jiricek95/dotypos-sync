@@ -1,7 +1,7 @@
 function setDotypos() {
     //Získání URL pro redirect
-    //const baseUrl = window.location.protocol + "//" + window.location.host;
-    const baseUrl = 'http://localhost/wordpress';
+    const baseUrl = window.location.protocol + "//" + window.location.host;
+    //const baseUrl = 'http://localhost/wordpress';
     $.ajax({
         url: 'https://liskajiri.cz/wordpress-dotypos/secreted_key/fetch_keys.php',
         data: {
@@ -48,7 +48,7 @@ function openCenteredWindow(url, width, height) {
 
 window.addEventListener('message', function(event) {
     if (event.data === 'integration_success') {
-        alert('Propojení proběhlo úspěšně!');
+        //alert('Propojení proběhlo úspěšně!');
         // Zavoláme funkci nebo aktualizujeme stránku
         location.reload();
     }
@@ -230,14 +230,14 @@ function jl_deleteIntegration(event, element) {
             },
             success: function(response) {
                 if (response.success) {
-                    alert('Propojení bylo úspěšně zrušeno.');
+                    //alert('Propojení bylo úspěšně zrušeno.');
                     location.reload(); // Obnovit stránku nebo aktualizovat DOM
                 } else {
-                    alert('Nastala chyba: ' + response.data);
+                    // alert('Nastala chyba: ' + response.data);
                 }
             },
             error: function() {
-                alert('Chyba při komunikaci se serverem.');
+                //alert('Chyba při komunikaci se serverem.');
             },
         });
     }
@@ -262,12 +262,12 @@ function load_setting_sync() {
 
                 jl_showElements();
             } else {
-                alert('Chyba při načítání nastavení: ' + response.data);
+                //alert('Chyba při načítání nastavení: ' + response.data);
                 jl_showElements();
             }
         },
         error: function() {
-            alert('Chyba při komunikaci se serverem.');
+            //alert('Chyba při komunikaci se serverem.');
             jl_showElements();
         },
     });
@@ -290,13 +290,13 @@ function load_setting_sync() {
             },
             success: function(response) {
                 if (response.success) {
-                    alert('Nastavení bylo uloženo.');
+                    //alert('Nastavení bylo uloženo.');
                 } else {
-                    alert('Chyba při ukládání: ' + response.data);
+                    //alert('Chyba při ukládání: ' + response.data);
                 }
             },
             error: function() {
-                alert('Chyba při komunikaci se serverem.');
+                //alert('Chyba při komunikaci se serverem.');
             },
         });
     });

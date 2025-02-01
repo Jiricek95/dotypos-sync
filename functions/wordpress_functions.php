@@ -196,51 +196,6 @@ function dotypos_sync_stock_button_action() {
 
 }
 
-//Kontrola vytvoření nového produktu ve WooCommerce
-add_action('save_post', 'check_new_product_sku', 10, 3);
-
-function check_new_product_sku($post_id, $post, $update) {
-    /*
-    global $wpdb;
-
-    $result = $wpdb->get_row( "SELECT sync_new_product_from_woo FROM $dotypos_j_l_table_name ");
-if($result != null){
-    // Zkontrolujeme, zda se jedná o produkt
-    if ($post->post_type != 'product') {
-        return;
-    }
-
- if($result->sync_new_product_from_woo == 1){
-
-    // Získáme SKU produktu, pokud existuje
-    $sku = get_post_meta($post_id, '_sku', true) ?: null;
-
-    // Pokud SKU existuje, pokračujeme se zpracováním
-    if ($sku) {
-        // Získáme další informace o produktu
-        $name = get_the_title($post_id) ?: null;
-        $price = get_post_meta($post_id, '_price', true) ?: 0;
-        $stock_status = get_post_meta($post_id, '_stock', true) ?: null;
-
-        $tax_rate = d_j_l_tax_rate_by_sku($sku);
-
-        
-        
-        //Kontrola existence v DTK a odeslání
-        if($dotypos_product_info = d_j_l_get_dotypos_product_by_sku($sku)){
-            central_logs($dotypos_product_info,'Info');
-            return;
-        }else{
-            d_j_l_post_new_product_to_dotypos($sku,$price,$tax_rate,$name);
-        }
-    }
-}else{
-    return;
-}
-}
-*/
-}
-
 //Funkce pro získání produktu woo podle sku / plu
 function dotypos_sync_product_by_sku($sku) {
     global $wpdb;
@@ -289,42 +244,138 @@ function dotypos_sync_product_by_sku($sku) {
 
 }
 
-//Získání změny ceny u produktu
-add_action('woocommerce_product_object_updated_props', 'check_regular_price_change_and_get_sku', 10, 2);
+//Sync po uložení produktu
+add_action('woocommerce_update_product', 'dotypos_sync_handle_product_save_action', 10, 1);
 
-function check_regular_price_change_and_get_sku($product, $changed_props) {
+function dotypos_sync_handle_product_save_action($product_id) {
+static $processed_products = [];
 
-    if(dotypos_sync_get_sync_setting('setting_from_woo_price') === false){
+if (in_array($product_id, $processed_products, true)) {
+    return;
+}
+
+$processed_products[] = $product_id;
+    // Interní volání REST API
+    wp_remote_post(rest_url('dotypos/v1/sync-to'), [
+        'body'    => json_encode($product_id),
+        'headers' => [
+            'Content-Type' => 'application/json',
+        ],
+    ]);
+}
+
+/*=== Funkce pro asynchronní sync dat do DTK ===*/
+add_action('rest_api_init', function () {
+    register_rest_route('dotypos/v1', '/sync-to', [
+        'methods'  => 'POST',
+        'callback' => 'dotypos_sync_data_sync_to_dotypos',
+        'permission_callback' => '__return_true', // Povolení přístupu
+    ]);
+});
+
+function dotypos_sync_data_sync_to_dotypos($request) {
+    $product_id = $request->get_json_params();
+
+    $product = wc_get_product($product_id);
+    $sku = $product->get_sku();
+    if (!$product || $product->get_status() != 'publish' || $sku == '') {
         return;
     }
-        
-    if (in_array('regular_price', $changed_props)) {
-        // Získání regular_price
+
+    // Data k synchronizaci
+    $sync_data = [
+        'id' => $product_id,
+        'name' => $product->get_name(),
+        'price' => $product->get_regular_price(),
+        'status' => $product->get_status(),
+        'sku'=>$product->get_sku(),
+        'tax_class'=>$product->get_tax_class(),
+    ];
+
+    $regular_price = '';
+    $name = '';
+    $price_without_vat = '';
+
+    if(dotypos_sync_get_sync_setting('setting_from_woo_price') === true){
         $regular_price = $product->get_regular_price();
 
-        // Získání SKU
-        $sku = $product->get_sku();
-        if($sku != '' && $sku != null){
-
-            $dotypos_product_info = dotypos_sync_dotypos_productid($sku);
-
-            if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
-
-                $price_without_vat = $regular_price / $dotypos_product_info["vat"];
-
-                $woo_data = [
-                    "regular_price" => $regular_price,
-                    "sku" => $sku,
-                    "dotypos_product_id" => $dotypos_product_info["dotypos_product_id"],
-                    "eTag" => $dotypos_product_info["eTag"],
-                    "price_without_vat" => $price_without_vat
-                ];
-                
-                dotypos_sync_update_product($woo_data);
-
+        $product_tax_class = $product->get_tax_class();
+        $product_tax_rate = null;
+        $tax_rates = dotypos_sync_get_taxes_wc();
+        foreach($tax_rates as $key=>$value){
+            if($key == $product_tax_class){
+                $product_tax_rate = ($value / 100) + 1;
             }
-        
         }
-
+        
+        
     }
+    if(dotypos_sync_get_sync_setting('setting_from_woo_name') === true){
+        $name = $product->get_name();
+    }
+
+    $dotypos_product_info = dotypos_sync_dotypos_productid($sku);
+
+    if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
+
+        $price_without_vat = $regular_price / $dotypos_product_info["vat"];
+
+        $woo_data = [
+            "regular_price" => $regular_price ? $regular_price : $dotypos_product_info["price_with_vat"],
+            "sku" => $sku,
+            "dotypos_product_id" => $dotypos_product_info["dotypos_product_id"],
+            "eTag" => $dotypos_product_info["eTag"],
+            "price_without_vat" => $price_without_vat,
+            "name" => $name ? $name : $dotypos_product_info["name"],
+            "vat"=> $product_tax_rate ? $product_tax_rate : $dotypos_product_info["vat"],
+        ];
+        
+        dotypos_sync_update_product($woo_data);
+    }
+
+}
+
+
+add_action('wp_ajax_get_taxes', 'dotypos_sync_get_taxes_wc');
+function dotypos_sync_get_taxes_wc() {
+    global $wpdb;
+
+    // Dotaz pro získání všech sazeb daně a jejich vazby na daňové třídy
+    $results = $wpdb->get_results(
+        "
+        SELECT 
+            tax_rates.tax_rate,
+            IFNULL(tax_classes.slug, '') AS tax_class
+        FROM 
+            {$wpdb->prefix}woocommerce_tax_rates AS tax_rates
+        LEFT JOIN 
+            {$wpdb->prefix}wc_tax_rate_classes AS tax_classes
+        ON 
+            tax_classes.slug = tax_rates.tax_rate_class
+        ",
+        ARRAY_A
+    );
+
+    // Vytvoření asociativního pole class => rate
+    $tax_rates = [];
+    foreach ($results as $row) {
+        $tax_class = $row['tax_class']; // Daňová třída
+        $tax_rate = $row['tax_rate'];  // Sazba daně
+
+        // Uložíme sazbu daně pod správnou daňovou třídu
+        $tax_rates[$tax_class] = $tax_rate;
+    }
+
+    // Vrácení jako JSON
+   return $tax_rates;
+}
+
+
+//Tvorba nového produktu
+//add_action('woocommerce_new_product', 'moje_funkce_pri_novem_produktu', 10, 1);
+
+
+//Získání id produktu na základě sku
+function dotypos_sync_get_product_id_by_sku(){
+    
 }
