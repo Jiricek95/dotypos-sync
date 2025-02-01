@@ -2,8 +2,9 @@
 
 function dotypos_sync_control_updatehook($data){
 
+    $decoded_data = json_decode($data,true);
 
-foreach($data as $row){
+foreach($decoded_data as $row){
     
     
     if(!empty($row['plu'])){
