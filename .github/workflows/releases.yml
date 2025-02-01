@@ -17,8 +17,8 @@ jobs:
 
       - name: 🗂️ Připravit složku pro ZIP
         run: |
-          mkdir dotypos-sync
-          rsync -av --exclude="dotypos-sync" --exclude=".git" --exclude=".github" ./ dotypos-sync/
+          mkdir dotypos-sync-main
+          rsync -av --exclude="dotypos-sync-main" --exclude=".git" --exclude=".github" ./ dotypos-sync-main/
 
       - name: 📦 Vytvořit ZIP soubor
         run: |
