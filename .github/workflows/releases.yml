@@ -27,4 +27,4 @@ jobs:
       - name: 🚀 Připojit ZIP k release
         uses: softprops/action-gh-release@v1
         with:
-          files: dotypos-sync-*.zip
+          files: dotypos-syncc-*.zip
