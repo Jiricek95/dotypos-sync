@@ -2,7 +2,6 @@
 
 function dotypos_sync_control_updatehook($data){
 
-    if(!$data){
 
 foreach($data as $row){
     
@@ -86,4 +85,3 @@ foreach($data as $row){
     }
     
 }
-    }
