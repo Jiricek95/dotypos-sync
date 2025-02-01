@@ -12,14 +12,18 @@ jobs:
       - name: 🛠️ Checkout repository
         uses: actions/checkout@v3
 
-      - name: 📁 Připravit správný ZIP
+      - name: 📁 Připravit složku pro ZIP
         run: |
           mkdir dotypos-sync-main
-          cp -r ./* dotypos-sync-main/
-          rm -rf dotypos-sync-main/.git dotypos-sync-main/.github
-          zip -r dotypos-sync-main.zip dotypos-sync-main/
+          cp -r $(ls -A) dotypos-sync-main/  # Kopíruje všechny soubory kromě . a ..
+          rm -rf dotypos-sync-main/.git dotypos-sync-main/.github  # Odstranění nepotřebných složek
 
-      - name: 🚀 Připojit správný ZIP k Release
+      - name: 📦 Vytvořit ZIP soubor
+        run: |
+          version=$(git describe --tags --abbrev=0)
+          zip -r "dotypos-sync-${version}.zip" dotypos-sync-main/
+
+      - name: 🚀 Připojit ZIP k Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dotypos-sync-main.zip
+          files: dotypos-sync-*.zip
