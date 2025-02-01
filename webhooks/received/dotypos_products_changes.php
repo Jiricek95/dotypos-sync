@@ -27,6 +27,7 @@ foreach($data as $row){
         
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($sku)){
+
             
             $woo_data = wc_get_product($woo_product_id);
             
