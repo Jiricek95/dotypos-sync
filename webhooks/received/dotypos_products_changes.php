@@ -1,40 +1,32 @@
 <?php
 
-function dotypos_sync_control_updatehook($data){
+function dotypos_sync_control_updatehook(WP_REST_Request $request){
 
-    $decoded_data = json_decode($data,true);
+    $data = $request->get_json_params();
 
-foreach($decoded_data as $row){
+    if (!$data) {
+        return new WP_REST_Response(['error' => 'Bad JSON'], 400);
+    }
     
+foreach($data as $row){
     
     if(!empty($row['plu'])){
-        
-        $sku = $row['plu'];
-        $vat = $row['vat'];
-        $price_without_vat = $row['pricewithoutvat'];
-        $price_with_vat = $row['pricewithvat'];
-        $versiondate = $row['versiondate'];
-        $name = $row['name'];
 
         $dotypos_data = [
-            'plu'=>$row['plu'] ? $row['plu'] : null,
-            'vat'=>$row['vat'] ? $row['vat'] : null,
-            'price_without_vat' => $row['price_without_vat'] ? $row['price_without_vat'] : null,
-            'price_with_vat'=>$row['pricewithvat'] ? $row['pricewithvat'] : null,
-            'versiondate'=>$row['versiondate'] ? $row['versiondate'] : null,
-            'name'=>$row['name'] ? $row['name'] : null,
+            'plu'=> isset($row['plu']) ? $row['plu'] : null,
+            'vat'=>isset($row['vat']) ? $row['vat'] : null,
+            'price_without_vat' => isset($row['price_without_vat']) ? $row['price_without_vat'] : null,
+            'price_with_vat'=>isset($row['price_with_vat']) ? $row['price_with_vat'] : null,
+            'versiondate'=>isset($row['versiondate']) ? $row['versiondate'] : null,
+            'name'=>isset($row['name']) ? $row['name'] : null,
         ];
         
         //Woo data
-        if($woo_product_id = dotypos_sync_get_product_id_by_sku($sku)){
-
-            central_logs('První podmínka ',$woo_product_id,'debug');
+        if($woo_product_id = dotypos_sync_get_product_id_by_sku($dotypos_data['plu'])){
             
             $woo_data = wc_get_product($woo_product_id);
             
-            if(!$woo_data){
-
-                central_logs('Druhá podmínka ',$woo_data,'debug');
+            if($woo_data){
            
                 $regular_price = $woo_data->get_regular_price();
                 $price = $woo_data->get_price();
@@ -42,9 +34,7 @@ foreach($decoded_data as $row){
 
                 if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true){
 
-                    central_logs('Třetí podmínka ',$woo_product_id,'debug');
-
-                    if($regular_price != $dotypos_data['price_with_vat']){
+                    if($dotypos_data['price_with_vat'] !== null || $regular_price != $dotypos_data['price_with_vat']){
                     
                         if($sale_price != null){
                             
