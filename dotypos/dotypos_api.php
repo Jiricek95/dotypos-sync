@@ -174,7 +174,7 @@ function dotypos_sync_webhook_create($post_data) {
 
         if (!empty($access_token_data)) {
             $data = $access_token_data;
-            $stockhook_url = get_site_url() . '/dotypos-stockhook';
+            $stockhook_url = get_site_url() . 'wp-json/dotypos/v1/dotypos-stockhook/';
 
             // Definice prvního webhooku (STOCKLOG)
             $stockhook_data = [
@@ -191,7 +191,7 @@ function dotypos_sync_webhook_create($post_data) {
 
             if (!empty($stockhook_response) && $stockhook_response['status_code'] == 200) {
                 $stockhook_id = $stockhook_response['data']['id'];
-                $webhook_changes_url = get_site_url() . '/dotypos-product-update';
+                $webhook_changes_url = get_site_url() . 'wp-json/dotypos/v1/dotypos-product-update/';
 
                 // Definice druhého webhooku (PRODUCT)
                 $producthook_data = [

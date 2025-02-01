@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.13
+ * @version       2.0.14
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.13
+ * Version:       2.0.14
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.13");
+define("DOTYPOSSYNC_VERSION", "2.0.14");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -46,7 +46,8 @@ require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/wordpress_functions.php";
 require_once DOTYPOSSYNC_PLUGIN_DIR . "dotypos/dotypos_api.php";
 //Order porcess
 require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/processing_woo_order.php";
-
+//Releases
+require_once DOTYPOSSYNC_PLUGIN_DIR . "releases/control_release.php";
 // Kontrola verze pro dbDelta
 require_once ABSPATH . "wp-admin/includes/upgrade.php";
 
@@ -401,107 +402,56 @@ function dotypos_sync_set_dotypos_webhook()
 */
 require_once DOTYPOSSYNC_PLUGIN_DIR ."webhooks/received/dotypos_stockhook.php";
 require_once DOTYPOSSYNC_PLUGIN_DIR ."webhooks/received/dotypos_products_changes.php";
-//Nový příjem webhooku
-add_action( 'parse_request', function( $wp ){
+add_action('rest_api_init', function () {
+    // Endpoint pro příjem webhooku skladu
+    register_rest_route('dotypos/v1', '/dotypos-stockhook/', [
+        'methods' => 'POST',
+        'callback' => 'dotypos_sync_control_stockhook',
+        'permission_callback' => '__return_true',
+    ]);
 
-    if ( preg_match( '/^\/dotypos-stockhook/', $_SERVER['REQUEST_URI'], $matches ) ) {
-        send_nosniff_header();
-        header('Cache-Control: no-cache');
-        header('Pragma: no-cache');
+    // Endpoint pro aktualizaci produktů
+    register_rest_route('dotypos/v1', '/dotypos-product-update/', [
+        'methods' => 'POST',
+        'callback' => 'dotypos_sync_control_updatehook',
+        'permission_callback' => '__return_true',
+    ]);
 
-        // Přečtěte tělo požadavku
-        $body = file_get_contents('php://input');
-        // Dekódování JSON těla požadavku
-        $data = json_decode($body, true); // Nastavte true pro získání dat jako pole
-
-        if ($data) {
-            // Zde můžete zpracovávat data
-            dotypos_sync_control_stockhook($data);
-        } else {
-            // V případě chyby při dekódování JSON
-            header('HTTP/1.1 400 Bad Request');
-            echo json_encode(['error' => 'Bad JSON']);
-        }
-
-        exit; // Ukončete zpracování požadavku
-    }
+    // Endpoint pro zapnutí logování
+    register_rest_route('dotypos/v1', '/activate-debug-logs/', [
+        'methods' => 'POST',
+        'callback' => 'dotypos_activate_debug_logs',
+        'permission_callback' => '__return_true',
+    ]);
 });
 
-add_action( 'parse_request', function( $wp ){
-
-    if ( preg_match( '/^\/dotypos-product-update/', $_SERVER['REQUEST_URI'], $matches ) ) {
-        send_nosniff_header();
-        header('Cache-Control: no-cache');
-        header('Pragma: no-cache');
-
-        // Přečtěte tělo požadavku
-        $body = file_get_contents('php://input');
-
-        // Dekódování JSON těla požadavku
-        $data = json_decode($body, true); // Nastavte true pro získání dat jako pole
-
-        if ($data) {
-            // Zde můžete zpracovávat data
-            dotypos_sync_control_updatehook($data);
-        } else {
-            // V případě chyby při dekódování JSON
-            header('HTTP/1.1 400 Bad Request');
-            echo json_encode(['error' => 'Bad JSON']);
-        }
-
-        exit; // Ukončete zpracování požadavku
-    }
-});
-
-//Zapnutí logování na dálku
-add_action( 'parse_request', function( $wp ){
+// 🔹 Funkce pro zapnutí logování
+function dotypos_activate_debug_logs(WP_REST_Request $request) {
     global $wpdb;
 
-    if ( preg_match( '/^\/activate_debug_logs/', $_SERVER['REQUEST_URI'], $matches ) ) {
-        send_nosniff_header();
-        header('Cache-Control: no-cache');
-        header('Pragma: no-cache');
+    // Získání JSON dat
+    $data = $request->get_json_params();
 
-        // Přečtěte tělo požadavku
-        $body = file_get_contents('php://input');
-
-        // Dekódování JSON těla požadavku
-        $data = json_decode($body, true); // Nastavte true pro získání dat jako pole
-
-        if ($data) {
-
-            if($data['debug_logs']){
-
-                $sql = $wpdb->prepare(
-                    "INSERT INTO " .
-                        DOTYPOSSYNC_TABLE_NAME .
-                        " (`key`, `value`) 
-                     VALUES (%s, %s) 
-                     ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
-                    'debug_log',
-                    $data['debug_logs']
-                );
-
-                // Kontrola, zda byl update úspěšný
-                if ( false === $sql ) {
-                    header('HTTP/1.1 400 Bad Request');
-                    echo json_encode(['error' => 'Bad JSON']);
-                } else {
-                    header('HTTP/1.1 200');
-                    echo json_encode(['success' => 'new_value '.$data['debug_logs']]);
-                }
-
-            }
-
-        } else {
-            // V případě chyby při dekódování JSON
-            header('HTTP/1.1 400 Bad Request');
-            echo json_encode(['error' => 'Bad JSON']);
-        }
-
-        exit; // Ukončete zpracování požadavku
+    if (!$data || empty($data['debug_logs'])) {
+        return new WP_REST_Response(['error' => 'Bad JSON'], 400);
     }
-});
+
+    // Vložení nebo aktualizace hodnoty v databázi
+    $sql = $wpdb->prepare(
+        "INSERT INTO " . DOTYPOSSYNC_TABLE_NAME . 
+        " (`key`, `value`) 
+         VALUES (%s, %s) 
+         ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+        'debug_log',
+        $data['debug_logs']
+    );
+
+    if ($wpdb->query($sql) === false) {
+        return new WP_REST_Response(['error' => 'Database error'], 400);
+    }
+
+    return new WP_REST_Response(['success' => 'new_value ' . $data['debug_logs']], 200);
+}
 
 
 

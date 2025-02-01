@@ -1,17 +1,16 @@
 <?php
 
-function dotypos_sync_control_stockhook($data){
-global $wpdb;
+function dotypos_sync_control_stockhook(WP_REST_Request $request){
 
-if(dotypos_sync_get_sync_setting('setting_from_dotypos_stockhook') === false){
-    return;
+    if(dotypos_sync_get_sync_setting('setting_from_dotypos_stockhook') === false){
+        return;
+        }
+
+    $data = $request->get_json_params();
+
+    if (!$data) {
+        return new WP_REST_Response(['error' => 'Bad JSON'], 400);
     }
-
-     dotypos_sync_dotypos_stockhook_process($data);
-
-}
-
-function dotypos_sync_dotypos_stockhook_process($data){
 
 
 foreach($data as $row){
