@@ -28,16 +28,21 @@ foreach($data as $row){
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($sku)){
 
+            central_logs('První podmínka ',$woo_product_id,'debug');
             
             $woo_data = wc_get_product($woo_product_id);
             
             if(!$woo_data){
+
+                central_logs('Druhá podmínka ',$woo_data,'debug');
            
                 $regular_price = $woo_data->get_regular_price();
                 $price = $woo_data->get_price();
                 $sale_price = $woo_data->get_sale_price();
 
                 if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true){
+
+                    central_logs('Třetí podmínka ',$woo_product_id,'debug');
 
                     if($regular_price != $dotypos_data['price_with_vat']){
                     
