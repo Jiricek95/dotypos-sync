@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.27
+ * @version       2.0.28
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.27
+ * Version:       2.0.28
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.27");
+define("DOTYPOSSYNC_VERSION", "2.0.28");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -36,7 +36,8 @@ define("DOTYPOSSYNC_PLUGIN_DIR", plugin_dir_path(DOTYPOSSYNC_PLUGIN_FILE));
 
 // Plugin Folder URL
 define("DOTYPOSSYNC_PLUGIN_URL", plugin_dir_url(DOTYPOSSYNC_PLUGIN_FILE));
-
+//Github token
+define('GITHUB_ACCESS_TOKEN', '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');
 //Připojení souborů
 //Funkce pro Dotykačku
 require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/dotypos_functions.php";
@@ -595,21 +596,36 @@ function dotypos_sync_get_sync_setting($setting_key){
 
 
 function dotypos_check_for_updates($transient) {
+    static $already_run = false;
+    if ($already_run) {
+        return $transient;
+    }
+    $already_run = true;
+
+    central_logs('Spuštění funkce','','debug');
+
     if (empty($transient->checked)) {
         return $transient;
     }
 
-    $repo_owner = 'Jiricek95';  // GitHub uživatelské jméno nebo organizace
-    $repo_name  = 'dotypos-sync'; // Název repozitáře
-    $plugin_slug = 'dotypos-sync-main/dotypos-sync.php'; // cesta k hlavnímu souboru pluginu
+    $repo_owner = 'Jiricek95';  
+    $repo_name  = 'dotypos-sync';  
+    $plugin_slug = plugin_basename(__FILE__);  
 
     $url = "https://api.github.com/repos/$repo_owner/$repo_name/releases/latest";
 
+    // ✅ Přidání autentizace, pokud je dostupný token
+    $headers = [
+        'User-Agent' => 'WordPress-Plugin-Updater',
+    ];
+
+    if (defined('GITHUB_ACCESS_TOKEN')) {
+        $headers['Authorization'] = 'token ' . GITHUB_ACCESS_TOKEN;
+    }
+
     $response = wp_remote_get($url, [
         'timeout' => 10,
-        'headers' => [
-            'User-Agent' => 'WordPress-Plugin-Updater'
-        ]
+        'headers' => $headers,
     ]);
 
     if (is_wp_error($response)) {
@@ -617,15 +633,15 @@ function dotypos_check_for_updates($transient) {
     }
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
+    central_logs('Data aktualizace',json_encode($data,true),'debug');
 
     if (!$data || empty($data['tag_name']) || empty($data['assets'])) {
         return $transient;
     }
 
-    $new_version = ltrim($data['tag_name'], 'v'); // Odstraníme "v" na začátku
+    $new_version = $data['tag_name'];
     $download_url = null;
 
-    // Hledáme ZIP soubor mezi release assets
     foreach ($data['assets'] as $asset) {
         if (strpos($asset['name'], '.zip') !== false) {
             $download_url = $asset['browser_download_url'];
@@ -637,7 +653,6 @@ function dotypos_check_for_updates($transient) {
         return $transient;
     }
 
-    // Pokud je dostupná nová verze, přidáme ji do aktualizací
     if (version_compare($transient->checked[$plugin_slug], $new_version, '<')) {
         $transient->response[$plugin_slug] = (object) [
             'slug'        => $repo_name,
