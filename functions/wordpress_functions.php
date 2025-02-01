@@ -383,8 +383,7 @@ function dotypos_sync_get_product_id_by_sku($sku){
             $wpdb->prepare(
                 "SELECT post_id FROM {$wpdb->prefix}postmeta WHERE `meta_key` = _sku `meta_value` = %s LIMIT 1",
                 $sku
-            ),
-            ARRAY_A
+            )
         );
 
         if(!$result){
