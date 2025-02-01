@@ -374,21 +374,78 @@ function dotypos_sync_get_taxes_wc() {
 //Tvorba nového produktu
 //add_action('woocommerce_new_product', 'moje_funkce_pri_novem_produktu', 10, 1);
 
+
 //Získání id produktu na základě sku
 function dotypos_sync_get_product_id_by_sku($sku){
 
     global $wpdb;
 
-            $result = $wpdb->get_result(
+            $result = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT post_id FROM {$wpdb->prefix}postmeta WHERE `meta_key` = _sku `meta_value` = %s LIMIT 1",
+                "SELECT post_id FROM {$wpdb->prefix}postmeta WHERE `meta_key` = '_sku' and `meta_value` = %s LIMIT 1",
                 $sku
             )
         );
-
-        if(!$result){
-            return $result;
-        }
-
-        return null;
+        
+return $result ?: null;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Pro testování
+
+add_action('wp_ajax_get_sku', 'dotypos_sync_get_sku_id');
+function dotypos_sync_get_sku_id(){
+
+    $sku = $_POST['sku'];
+
+wp_send_json(dotypos_sync_get_product_id_by_sku($sku));
+}
+*/
+/*Ajax pro test
+    jQuery.ajax({
+        url: dotypos_scripts.ajax_url, // WordPress AJAX handler
+        method: 'POST',
+        data: {
+            action: 'get_sku',
+            sku: 9988
+        },
+        success: function(response) {
+console.log(response);
+
+        },
+        error: function() {
+
+        }
+    });
+
+*/
