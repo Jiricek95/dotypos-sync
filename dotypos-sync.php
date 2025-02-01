@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.6
+ * @version       2.0.7
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.6
+ * Version:       2.0.7
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.6");
+define("DOTYPOSSYNC_VERSION", "2.0.7");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -442,6 +442,7 @@ add_action( 'parse_request', function( $wp ){
 
         if ($data) {
             // Zde můžete zpracovávat data
+            central_logs($data,"","debug");
             dotypos_sync_control_updatehook($data);
         } else {
             // V případě chyby při dekódování JSON
