@@ -1,6 +1,9 @@
 name: Build Plugin ZIP for WordPress
 
 on:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
 
@@ -15,9 +18,7 @@ jobs:
       - name: 🗂️ Připravit složku pro ZIP
         run: |
           mkdir dotypos-sync
-          cp -r ./* dotypos-sync
-          rm -rf dotypos-sync/.git
-          rm -rf dotypos-sync/.github
+          rsync -av --exclude="dotypos-sync" --exclude=".git" --exclude=".github" ./ dotypos-sync/
 
       - name: 📦 Vytvořit ZIP soubor
         run: |
@@ -27,4 +28,4 @@ jobs:
       - name: 🚀 Připojit ZIP k release
         uses: softprops/action-gh-release@v1
         with:
-          files: dotypos-syncc-*.zip
+          files: dotypos-sync-*.zip
