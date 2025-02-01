@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 name: Generate Installable Plugin and Upload as Release Asset
+=======
+name: Build Plugin ZIP for WordPress
+>>>>>>> 2a3ac4fa9ca9ccb9520f408278284ee8ffe2be53
 
 on:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
 
@@ -10,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+<<<<<<< HEAD
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -29,3 +37,22 @@ jobs:
           files: build/dotypos-sync-main.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Použití vlastního PAT místo GITHUB_TOKEN
+=======
+      - name: 🛠️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🗂️ Připravit složku pro ZIP
+        run: |
+          mkdir dotypos-sync-main
+          rsync -av --exclude="dotypos-sync-main" --exclude=".git" --exclude=".github" ./ dotypos-sync-main/
+
+      - name: 📦 Vytvořit ZIP soubor
+        run: |
+          version=$(git describe --tags --abbrev=0)
+          zip -r "dotypos-sync-${version}.zip" dotypos-sync
+
+      - name: 🚀 Připojit ZIP k release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dotypos-sync-*.zip
+>>>>>>> 2a3ac4fa9ca9ccb9520f408278284ee8ffe2be53

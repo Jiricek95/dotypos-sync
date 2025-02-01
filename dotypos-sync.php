@@ -592,3 +592,62 @@ function dotypos_sync_get_sync_setting($setting_key){
     return (!empty($result) || $result == 1);
 
 }
+
+
+function dotypos_check_for_updates($transient) {
+    if (empty($transient->checked)) {
+        return $transient;
+    }
+
+    $repo_owner = 'Jiricek95';  // GitHub uživatelské jméno nebo organizace
+    $repo_name  = 'dotypos-sync'; // Název repozitáře
+    $plugin_slug = 'dotypos-sync-main/dotypos-sync.php'; // cesta k hlavnímu souboru pluginu
+
+    $url = "https://api.github.com/repos/$repo_owner/$repo_name/releases/latest";
+
+    $response = wp_remote_get($url, [
+        'timeout' => 10,
+        'headers' => [
+            'User-Agent' => 'WordPress-Plugin-Updater'
+        ]
+    ]);
+
+    if (is_wp_error($response)) {
+        return $transient;
+    }
+
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+
+    if (!$data || empty($data['tag_name']) || empty($data['assets'])) {
+        return $transient;
+    }
+
+    $new_version = $data['tag_name'];
+    $download_url = null;
+
+    // Hledáme ZIP soubor mezi release assets
+    foreach ($data['assets'] as $asset) {
+        if (strpos($asset['name'], '.zip') !== false) {
+            $download_url = $asset['browser_download_url'];
+            break;
+        }
+    }
+
+    if (!$download_url) {
+        return $transient;
+    }
+
+    // Pokud je dostupná nová verze, přidáme ji do aktualizací
+    if (version_compare($transient->checked[$plugin_slug], $new_version, '<')) {
+        $transient->response[$plugin_slug] = (object) [
+            'slug'        => $repo_name,
+            'new_version' => $new_version,
+            'package'     => $download_url,
+            'tested'      => '7.0',  // Změň podle kompatibility s WP
+            'requires'    => '6.0',  // Minimální verze WP
+        ];
+    }
+
+    return $transient;
+}
+add_filter('site_transient_update_plugins', 'dotypos_check_for_updates');
