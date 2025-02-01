@@ -442,7 +442,6 @@ add_action( 'parse_request', function( $wp ){
 
         if ($data) {
             // Zde můžete zpracovávat data
-            central_logs($data,"","debug");
             dotypos_sync_control_updatehook($data);
         } else {
             // V případě chyby při dekódování JSON

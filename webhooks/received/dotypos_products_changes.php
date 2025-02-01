@@ -2,6 +2,8 @@
 
 function dotypos_sync_control_updatehook($data){
 
+    if(!$data){
+
 foreach($data as $row){
     
     
@@ -13,6 +15,15 @@ foreach($data as $row){
         $price_with_vat = $row['pricewithvat'];
         $versiondate = $row['versiondate'];
         $name = $row['name'];
+
+        $dotypos_data = [
+            'plu'=>$row['plu'] ? $row['plu'] : null,
+            'vat'=>$row['vat'] ? $row['vat'] : null,
+            'price_without_vat' => $row['price_without_vat'] ? $row['price_without_vat'] : null,
+            'price_with_vat'=>$row['pricewithvat'] ? $row['pricewithvat'] : null,
+            'versiondate'=>$row['versiondate'] ? $row['versiondate'] : null,
+            'name'=>$row['name'] ? $row['name'] : null,
+        ];
         
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($sku)){
@@ -27,18 +38,18 @@ foreach($data as $row){
 
                 if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true){
 
-                    if($regular_price != $price_with_vat){
+                    if($regular_price != $dotypos_data['price_with_vat']){
                     
                         if($sale_price != null){
                             
-                            $woo_data->set_regular_price($price_with_vat);
+                            $woo_data->set_regular_price($dotypos_data['plu']);
                             $woo_data->set_tax_status('taxable');
                             $woo_data->set_tax_class($tax_class_slug);
                             $woo_data->save();
                             
                     }else{
-                        $woo_data->set_regular_price($price_with_vat);
-                            $woo_data->set_price($price_with_vat);
+                        $woo_data->set_regular_price($dotypos_data['price_with_vat']);
+                            $woo_data->set_price($dotypos_data['price_with_vat']);
                             $woo_data->set_tax_status('taxable');
                             $woo_data->set_tax_class($tax_class_slug);
                             $woo_data->save();
@@ -51,7 +62,7 @@ foreach($data as $row){
 
                     if(dotypos_sync_get_sync_setting('setting_from_dotypos_name') === true){
 
-                        $woo_data->set_name($name);
+                        $woo_data->set_name($dotypos_data['name']);
                         $woo_data->save();
 
                         }
@@ -68,5 +79,5 @@ foreach($data as $row){
         }
     }
     
-    
+}
     }
