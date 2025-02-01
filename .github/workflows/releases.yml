@@ -1,0 +1,23 @@
+name: Build Plugin ZIP
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Create ZIP with correct folder name
+        run: |
+          mkdir dotypos-sync
+          cp -r * dotypos-sync
+          zip -r dotypos-sync-${{ github.event.release.tag_name }}.zip dotypos-sync
+
+      - name: Upload release ZIP
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dotypos-sync-${{ github.event.release.tag_name }}.zip
