@@ -28,4 +28,4 @@ jobs:
         with:
           files: build/dotypos-sync-main.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Použití vlastního PAT místo GITHUB_TOKEN
