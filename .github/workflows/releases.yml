@@ -1,23 +1,30 @@
-name: Build Plugin ZIP
+name: Build Plugin ZIP for WordPress
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: 🛠️ Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create ZIP with correct folder name
+      - name: 🗂️ Připravit složku pro ZIP
         run: |
           mkdir dotypos-sync
-          cp -r * dotypos-sync
-          zip -r dotypos-sync-${{ github.event.release.tag_name }}.zip dotypos-sync
+          cp -r ./* dotypos-sync
+          rm -rf dotypos-sync/.git
+          rm -rf dotypos-sync/.github
 
-      - name: Upload release ZIP
+      - name: 📦 Vytvořit ZIP soubor
+        run: |
+          version=$(git describe --tags --abbrev=0)
+          zip -r "dotypos-sync-${version}.zip" dotypos-sync
+
+      - name: 🚀 Připojit ZIP k release
         uses: softprops/action-gh-release@v1
         with:
-          files: dotypos-sync-${{ github.event.release.tag_name }}.zip
+          files: dotypos-sync-*.zip
