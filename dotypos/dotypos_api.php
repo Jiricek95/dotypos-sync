@@ -394,11 +394,11 @@ central_logs("Odpověď funkce dotypos_sync_dotypos_stock_status() - \n Request 
         $stock_status = $data_response["stockQuantityStatus"];
         $purchase_price = $data_response["purchasePriceWithoutVat"];
 
-        return ["stock_status"=>$stock_status,"purchase_price"=>$purchase_price];
+        return ["stock_status"=>$stock_status,"purchase_price"=>$purchase_price,"plu"=>$data_response["plu"]];
 
     }elseif($status_code == 404){
     
-        return ["stock_status"=>0,"purchase_price"=>null];
+        return ["stock_status"=>0,"purchase_price"=>null,"plu"=>null];
 
     }else{
         //Logovat odpověď a status_code

@@ -36,8 +36,6 @@ define("DOTYPOSSYNC_PLUGIN_DIR", plugin_dir_path(DOTYPOSSYNC_PLUGIN_FILE));
 
 // Plugin Folder URL
 define("DOTYPOSSYNC_PLUGIN_URL", plugin_dir_url(DOTYPOSSYNC_PLUGIN_FILE));
-//Github token
-define('GITHUB_ACCESS_TOKEN', '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');
 //Připojení souborů
 //Funkce pro Dotykačku
 require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/dotypos_functions.php";
@@ -594,7 +592,7 @@ function dotypos_sync_get_sync_setting($setting_key){
 
 }
 
-
+/*
 function dotypos_check_for_updates($transient) {
     static $already_run = false;
     if ($already_run) {
@@ -611,17 +609,14 @@ function dotypos_check_for_updates($transient) {
     $repo_owner = 'Jiricek95';  
     $repo_name  = 'dotypos-sync';  
     $plugin_slug = plugin_basename(__FILE__);  
+    central_logs('Slug ',$plugin_slug,'debug');
 
     $url = "https://api.github.com/repos/$repo_owner/$repo_name/releases/latest";
 
-    // ✅ Přidání autentizace, pokud je dostupný token
+    //  Přidání autentizace, pokud je dostupný token
     $headers = [
         'User-Agent' => 'WordPress-Plugin-Updater',
     ];
-
-    if (defined('GITHUB_ACCESS_TOKEN')) {
-        $headers['Authorization'] = 'token ' . GITHUB_ACCESS_TOKEN;
-    }
 
     $response = wp_remote_get($url, [
         'timeout' => 10,
@@ -629,17 +624,17 @@ function dotypos_check_for_updates($transient) {
     ]);
 
     if (is_wp_error($response)) {
+        central_logs(' Chyba při komunikaci s GitHub API', json_encode($response->get_error_message()), 'error');
         return $transient;
     }
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
-    central_logs('Data aktualizace',json_encode($data,true),'debug');
 
     if (!$data || empty($data['tag_name']) || empty($data['assets'])) {
         return $transient;
     }
 
-    $new_version = $data['tag_name'];
+    $new_version = ltrim($data['tag_name'], 'v'); // Odstranění "v" pokud existuje
     $download_url = null;
 
     foreach ($data['assets'] as $asset) {
@@ -648,21 +643,25 @@ function dotypos_check_for_updates($transient) {
             break;
         }
     }
-
+    central_logs('Version ',$new_version,'debug');
     if (!$download_url) {
         return $transient;
     }
+    
 
     if (version_compare($transient->checked[$plugin_slug], $new_version, '<')) {
         $transient->response[$plugin_slug] = (object) [
+            'id'          => 'github.com/' . $repo_owner . '/' . $repo_name,
             'slug'        => $repo_name,
             'new_version' => $new_version,
             'package'     => $download_url,
             'tested'      => '6.4',
-            'requires'    => '6.0',
+            'requires'    => '6.5',
         ];
     }
+    central_logs('Transient ',json_encode($transient,true),'debug');
 
     return $transient;
 }
 add_filter('site_transient_update_plugins', 'dotypos_check_for_updates');
+*/http://localhost/wordpress/wp-admin/admin.php?page=wc-admin&path=/marketing
