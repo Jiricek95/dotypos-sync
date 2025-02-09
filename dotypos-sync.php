@@ -725,9 +725,10 @@ function show_admin_notifications() {
 
     if ($notification) {
         echo "<div class='notice notice-{$notification['type']} is-dismissible' data-dismissible='admin_notification'>
-                <p>" . _e(esc_html($notification['message']),'dotypos_sync') . "</p>
+                <p>" . esc_html__( $notification['message'], 'dotypos_sync' ) . "</p>
               </div>";
     }
+    
 }
 add_action('admin_notices', 'show_admin_notifications');
 
