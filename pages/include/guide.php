@@ -1,5 +1,6 @@
 <div id="guide">
     <div class="step active" id="step-1">
+        <button style="display: none;" onclick="merge_database()">Migrace databáze</button>
         <h2>K čemu je doplněk</h2>
         <p>Doplněk umožňuje synchronizaci produktů mezi Dotykačkou a WooCommerce</p>
         <button class="next button button-primary">Další</button>
@@ -13,7 +14,7 @@
     <div class="step" id="step-3">
         <h2>Krok 3</h2>
         <p>Nyní máte propojeno, stisnutím tlačítka dokončit</p>
-        <button class="button button-primary" onclick="jl_refreshPage()">Dokončit</button>
+        <button class="button button-primary" onclick="ds_refreshPage()">Dokončit</button>
     </div>
 </div>
 

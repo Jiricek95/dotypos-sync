@@ -51,7 +51,6 @@ return;
                                     "note" => "WooCommerce - ".$order_id,
                                     "operation" => "sale"
                                 ];
-                                central_logs('Order - '.json_encode($post_data,true),'','debug');
                                 dotypos_sync_send_stock_dotypos($post_data);
                             }
 

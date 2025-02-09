@@ -54,23 +54,8 @@ window.addEventListener('message', function(event) {
     }
 }, false);
 
-
-//Obecná funkce pro aktualizaci stránky
-function jl_refreshPage() {
-    location.reload(); // Aktualizuje stránku
-}
-
-function license_key_check() {
-
-}
-
-//Funkce pro načtení obsahu 2.html
-function jl_fetchAllSetting() {
-
-}
-
 //Funkce pro načtení nastavení synchronizace
-function jl_getDotyposSettingsCloud() {
+function ds_getDotyposSettingsCloud() {
     $.fn.loader('show', 'Načítám obsah...');
     var fields = ['cloudid', 'warehouse_id', 'warehouse_name'];
     $.ajax({
@@ -103,13 +88,13 @@ function jl_getDotyposSettingsCloud() {
 
             // Kontrola hodnoty 'cloudid' a aktualizace HTML
             if (cloudid && cloudid !== 'undefined' && cloudid !== null) {
-                jQuery('#dotypos_cloud').html('<h2>Dotypos ID Vzdálené správy</h2><br /><div><span class="cloudid">' + cloudid + '</span><span class="dashicons dashicons-trash jl-delete-icon" onclick="jl_deleteIntegration(event, this)"></span></div>');
+                jQuery('#dotypos_cloud').html('<h2>Dotypos ID Vzdálené správy</h2><br /><div><span class="cloudid">' + cloudid + '</span><span class="dashicons dashicons-trash jl-delete-icon" onclick="ds_delete_integration()"></span></div>');
             }
             if (warehouse_id != 'undefiend' && warehouse_id != null) {
                 jQuery('#selected_stock').append(warehouse_name);
                 load_setting_sync();
             } else {
-                jl_fetchDotyposStock();
+                ds_fetchDotyposStock();
             }
 
 
@@ -120,11 +105,41 @@ function jl_getDotyposSettingsCloud() {
 
         }
     });
+
 }
 
+function ds_delete_integration() {
+    customAlert.showConfirm(
+        'Opravdu chcete zrušit integraci ?',
+        function() { // Akce při potvrzení
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ds_delete_integration_dotypos',
+                },
+                success: function(response) {
+                    location.reload(true);
+                },
+                error: function(response) {
+
+                }
+            });
+
+        },
+        function() {
+
+        }
+    )
+}
+
+function ds_refreshPage() {
+    location.reload(true);
+}
 
 //Načtení skladů z Dotykačky
-function jl_fetchDotyposStock() {
+function ds_fetchDotyposStock() {
 
     const $stock_element = $('#stock_select');
     $stock_element.css('display', 'block');
@@ -176,7 +191,7 @@ function jl_fetchDotyposStock() {
 
                         if (response.success == true) {
                             $stock_element.remove();
-                            jl_getDotyposSettingsCloud();
+                            ds_getDotyposSettingsCloud();
                         }
 
 
@@ -204,12 +219,12 @@ function jl_fetchDotyposStock() {
 }
 
 
-function jl_showElements() {
+function ds_showElements() {
     jQuery('#settings_box').css('display', 'block');
 }
 
 //Zrušení celé integrace
-function jl_deleteIntegration(event, element) {
+function ds_deleteIntegration(event, element) {
     // Zabránění výchozí akci tlačítka
     event.preventDefault();
 
@@ -260,15 +275,15 @@ function load_setting_sync() {
                     $(`.setting-checkbox[data-id="${key}"]`).prop('checked', value === "1");
                 });
 
-                jl_showElements();
+                ds_showElements();
             } else {
                 //alert('Chyba při načítání nastavení: ' + response.data);
-                jl_showElements();
+                ds_showElements();
             }
         },
         error: function() {
             //alert('Chyba při komunikaci se serverem.');
-            jl_showElements();
+            ds_showElements();
         },
     });
 
@@ -430,7 +445,6 @@ jQuery(document).ready(function($) {
             // Nahradí text tlačítka spinnerem
             $button.html('<span class="spinner is-active" style="float:none; margin-left: 5px; visibility: visible;"></span> Načítám...');
 
-
             $.ajax({
                 url: dotypos_scripts.ajax_url,
                 type: 'POST',
@@ -459,7 +473,7 @@ jQuery(document).ready(function($) {
 
     });
 });
-
+/*
 function showCustomAlert(message, actionType) {
 
     console.log(actionType);
@@ -487,5 +501,93 @@ function showCustomAlert(message, actionType) {
         } else if (actionType === 'cancel') {
 
         }
+    });
+}
+*/
+function showCustomAlert(message, actionType) {
+    actionType = actionType ? actionType : 'cancel';
+
+    customAlert.showAlert(message, function() {
+        if (actionType === 'save') {
+            // Akce pro "confirm"
+            var saveButton = document.getElementById('save-post');
+            if (saveButton) {
+                saveButton.click(); // Kliknutí na tlačítko pro uložení produktu
+            } else {
+                document.getElementById('publish').click();
+            }
+        } else if (actionType === 'cancel') {
+
+        }
+    });
+}
+
+function stock_transfer_from_dotypos_action() {
+
+    customAlert.showConfirm(
+        'Spuštění operace vytvoří úlohu v plánovači WooCommerce. Až plánovač úlohu spustí, bude provedena synchronizace skladu',
+        function() { // Akce při potvrzení
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'stock_transfer_from_dotypos_action',
+                },
+                success: function(response) {
+
+                }
+            });
+
+        },
+        function() {
+
+        }
+    )
+
+}
+
+
+
+function product_transfer_from_dotypos_action() {
+
+    customAlert.showConfirm(
+        'Spuštění operace vytvoří úlohu v plánovači WooCommerce. Až plánovač úlohu spustí, bude proveden import produktů',
+        function() { // Akce při potvrzení
+
+            $.ajax({
+                url: dotypos_scripts.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'product_transfer_from_dotypos_action',
+                },
+                success: function(response) {
+
+                }
+            });
+
+        },
+        function() {
+
+        }
+    )
+}
+
+//Merge
+function merge_database() {
+    jQuery.ajax({
+        url: dotypos_scripts.ajax_url, // URL získaná z PHP
+        type: 'POST',
+        data: {
+            action: 'dotypos_sync_merge'
+        },
+        success: function(response) {
+
+            alert('Migrace databáze byla úspěšná');
+
+        },
+        error: function() {
+            alert('Chyba při migraci: ' + response);
+        },
     });
 }

@@ -110,8 +110,6 @@ function dotypos_sync_stock_button_action() {
                             ]; 
                             wp_send_json_success($response_data);
                     }else{
-                        central_logs('Nepodařilo se uložit nový sklad produktu -',$woo_product_id,"","info");
-                        //central_logs('Nepodařilo se uložit nový sklad produktu -',$woo_product_id);
                         $response_data = [
                             "response_msg" => 'Nepodařilo se uložit nový sklad produktu',
                             "actionType" => 'cancel'
@@ -335,8 +333,6 @@ function dotypos_sync_data_sync_to_dotypos($request) {
 
 }
 
-
-add_action('wp_ajax_get_taxes', 'dotypos_sync_get_taxes_wc');
 function dotypos_sync_get_taxes_wc() {
     global $wpdb;
 
