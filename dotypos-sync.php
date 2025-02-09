@@ -45,15 +45,18 @@ require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/wordpress_functions.php";
 require_once DOTYPOSSYNC_PLUGIN_DIR . "dotypos/dotypos_api.php";
 //Order porcess
 require_once DOTYPOSSYNC_PLUGIN_DIR . "functions/processing_woo_order.php";
+//Transfer from dotypos
+require_once DOTYPOSSYNC_PLUGIN_DIR . 'dotypos/stock_transfer_from_dotypos.php';
+require_once DOTYPOSSYNC_PLUGIN_DIR . 'dotypos/product_transfer_from_dotypos.php';
 
 // Kontrola verze pro dbDelta
 require_once ABSPATH . "wp-admin/includes/upgrade.php";
 
-// Definice konstanty pro název tabulky
-define("DOTYPOSSYNC_TABLE_NAME", $wpdb->prefix . "dotypos_sync_config");
-
 //Globální proměnná pro název tabulky v databázi
 global $wpdb;
+
+// Definice konstanty pro název tabulky
+define("DOTYPOSSYNC_TABLE_NAME", $wpdb->prefix . "dotypos_sync_config");
 
 //Registrace domény pro překladové soubory
 add_action('init', 'dotypos_sync_load_textdomain');
@@ -71,10 +74,8 @@ function dotypos_sync_load_textdomain()
 register_activation_hook(__FILE__, "dotypos_sync_install_database");
 
 // Instalace tabulky databáze
-function dotypos_sync_install_database()
-{
+function dotypos_sync_install_database(){
     global $wpdb;
-    $table = DOTYPOSSYNC_TABLE_NAME;
 
     // SQL dotaz na ověření existence tabulky
     $query = $wpdb->prepare("SHOW TABLES LIKE %s", DOTYPOSSYNC_TABLE_NAME);
@@ -82,8 +83,8 @@ function dotypos_sync_install_database()
     // Získání výsledku
     $result = $wpdb->get_var($query);
 
-    if ($result === DOTYPOSSYNC_TABLE_NAME) {
-        error_log("Table -> " . DOTYPOSSYNC_TABLE_NAME . " is exists");
+    if ($result == DOTYPOSSYNC_TABLE_NAME) {
+
     } else {
         //Vytvoření tabulky
         // Získání kódování a sady znaků databáze
@@ -107,7 +108,74 @@ function dotypos_sync_install_database()
         // Spuštění příkazu
         dbDelta($sql);
     }
+
+
 }
+add_action("wp_ajax_dotypos_sync_merge", "dotypos_sync_migrate_old_version");
+//Funkce pro kontrolu původní verze a migrace do nové databáze
+function dotypos_sync_migrate_old_version(){
+    global $wpdb;
+
+        // SQL dotaz na ověření existence tabulky
+        $query = $wpdb->prepare("SHOW TABLES LIKE %s", DOTYPOSSYNC_TABLE_NAME);
+        // Získání výsledku
+        $result = $wpdb->get_var($query);
+    
+        //Vymazání obsahu nové databáze pro nahrání obsahu ze staré databáze
+        if ($result === DOTYPOSSYNC_TABLE_NAME) {
+
+            $wpdb->query("TRUNCATE " . DOTYPOSSYNC_TABLE_NAME);
+
+        }
+
+    $old_table = $wpdb->prefix . 'dotypos_j_l_config'; // Uprav podle potřeby
+    $new_table = DOTYPOSSYNC_TABLE_NAME; // Název nové tabulky
+    
+    // Ověření existence staré tabulky
+    $query_old_table = $wpdb->prepare("SHOW TABLES LIKE %s", $old_table);
+    $result_old_table = $wpdb->get_var($query_old_table);
+
+    if ($result_old_table == $old_table) {
+
+        $results = $wpdb->get_row("SELECT * FROM ".$old_table, ARRAY_A);
+
+        if ($results) {
+            // Definování dat ve formátu key => value
+            $data = [
+                'setting_from_dotypos_price'  => $results["sync_price_from_dotypos"],
+                'setting_from_dotypos_stockhook'  => $results["sync_stock_from_dotypos"],
+                'setting_from_woo_price'      => $results["sync_price_from_woo"],
+                'setting_from_woo_stockhook'      => $results["sync_stock_from_woo"],
+                'cloudid'          => $results["cloudid_dotypos"],
+                'refresh_token_dotypos'    => $results["refresh_token_dotypos"],
+                'warehouse_id'             => $results["warehouse_id"],
+                'warehouse_name'           => $results["warehouse_name"],
+                'webhook_changes_id'        => $results["update_webhook_id"],
+                'webhook_id'               => $results["webhook_id"]
+            ];
+
+            // Vložení více hodnot jedním SQL dotazem
+            $values = [];
+            $placeholders = [];
+
+            foreach ($data as $key => $value) {
+                $values[] = $key;
+                $values[] = $value;
+                $placeholders[] = "(%s, %s)";
+            }
+
+            $query = "INSERT INTO $new_table (`key`, `value`) VALUES " . implode(", ", $placeholders);
+
+           if($wpdb->query($wpdb->prepare($query,$values))){
+
+            wp_send_json(["status"=>"success"]);
+      }else{
+            wp_send_json(["status"=>"error"]);
+           }
+        }
+    }
+}
+
 
 //Hook spouštěný při odinstalaci
 register_uninstall_hook(__FILE__, "dotypos_sync_uninstall");
@@ -167,6 +235,13 @@ function dotypos_sync_enqueue_scripts($hook)
             null,
             true
         );
+        wp_enqueue_script(
+            "customAlert",
+            DOTYPOSSYNC_PLUGIN_URL . "js/libraries/customAlert/customAlert.js",
+            ["jquery"],
+            null,
+            true
+        );
 
         // Načti CSS
         wp_enqueue_style(
@@ -216,6 +291,18 @@ function dotypos_sync_page_view()
 
 //Dotypos token save
 add_action("wp_ajax_dotypos_token_save", "dotypos_token_save");
+
+//Odstranění integrace
+add_action("wp_ajax_ds_delete_integration_dotypos", "ds_delete_integration_dotypos");
+function ds_delete_integration_dotypos(){
+global $wpdb;
+
+    if($wpdb->query("TRUNCATE " . DOTYPOSSYNC_TABLE_NAME)){
+        wp_send_json_success();
+    }else{
+       wp_send_json_error(); 
+    }
+}
 
 function dotypos_token_save() {
     global $wpdb;
@@ -276,8 +363,7 @@ function dotypos_token_save() {
 
 
 // Funkce pro vložení nebo aktualizaci do databáze
-function dotypos_sync_db_insert_update($key, $value)
-{
+function dotypos_sync_db_insert_update($key, $value){
     global $wpdb;
 
     $sql = $wpdb->prepare(
@@ -299,8 +385,7 @@ function dotypos_sync_db_insert_update($key, $value)
 
 //Načtení cloudid z databáze
 add_action("wp_ajax_dotypos_sync_cloud", "dotypos_sync_cloud");
-function dotypos_sync_cloud()
-{
+function dotypos_sync_cloud(){
     global $wpdb;
 
     // Zkontroluj, že pole 'fields' je definováno
@@ -330,12 +415,8 @@ function dotypos_sync_cloud()
 }
 
 //Načtení seznamu skladů z Dotykačky
-add_action(
-    "wp_ajax_dotypos_sync_dotypos_stock_list",
-    "dotypos_sync_dotypos_stock_list"
-);
-function dotypos_sync_dotypos_stock_list()
-{
+add_action("wp_ajax_dotypos_sync_dotypos_stock_list","dotypos_sync_dotypos_stock_list");
+function dotypos_sync_dotypos_stock_list(){
     $dotypos_stock_list = dotypos_sync_getDotyposStockList();
 
     if (!empty($dotypos_stock_list)) {
@@ -344,12 +425,8 @@ function dotypos_sync_dotypos_stock_list()
 }
 
 //Potvrzení výběru skladu a vytvoření webhooku
-add_action(
-    "wp_ajax_dotypos_sync_set_dotypos_webhook",
-    "dotypos_sync_set_dotypos_webhook"
-);
-function dotypos_sync_set_dotypos_webhook()
-{
+add_action("wp_ajax_dotypos_sync_set_dotypos_webhook","dotypos_sync_set_dotypos_webhook");
+function dotypos_sync_set_dotypos_webhook(){
     global $wpdb;
 
     if ($_POST["warehouse_id"] && $_POST["warehouse_name"]) {
@@ -393,7 +470,6 @@ function dotypos_sync_set_dotypos_webhook()
         }
     }
 }
-
 
 /*
 //Příjem dat z Dotykačky
@@ -455,18 +531,15 @@ function dotypos_activate_debug_logs(WP_REST_Request $request) {
 
 //logovací funkce
 function central_logs($text,$content,$mode){
-
     global $wpdb;
-/*
+
     $result = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT value FROM " . DOTYPOSSYNC_TABLE_NAME . " WHERE `key` = %s",
             "debug_log"
         )
     );
-*/
 
-$result = 1;
     if (!empty($result) && $result == 1 && $mode == 'debug') {
 
             $logger = wc_get_logger();
@@ -592,6 +665,97 @@ function dotypos_sync_get_sync_setting($setting_key){
 
 }
 
+//Přenos stavu skladu
+add_action('wp_ajax_stock_transfer_from_dotypos_action', 'plan_stock_transfer_from_dotypos');
+function plan_stock_transfer_from_dotypos() {
+
+    // Action
+    as_schedule_single_action( time(), 'stock_transfer_from_dotypos_execute');
+
+    // Odpověď pro AJAX volání
+    wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
+}
+//Spuštění funkce cronem
+add_action('stock_transfer_from_dotypos_execute', 'stock_transfer_from_dotypos_execute_callback');
+function stock_transfer_from_dotypos_execute_callback() {
+    try {
+        stock_transfer_from_dotypos();
+        add_admin_notification('Synchronizace skladu z Dotykačky byla úspěšně dokončena.', 'success');
+    } catch (Exception $e) {
+        add_admin_notification('Chyba při synchronizaci skladu z Dotykačky: ' . $e->getMessage(), 'error');
+    }
+}
+
+
+
+
+//Přenos produktů z Dotykačky
+add_action('wp_ajax_product_transfer_from_dotypos_action', 'plan_product_transfer_from_dotypos');
+function plan_product_transfer_from_dotypos() {
+
+    // Action
+    as_schedule_single_action( time(), 'product_transfer_from_dotypos_execute');
+
+    // Odpověď pro AJAX volání
+    wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
+}
+//Hook, který spouští cron
+add_action( 'product_transfer_from_dotypos_execute', 'product_transfer_from_dotypos_execute_callback' );
+//Spuštění funkce cronem
+function product_transfer_from_dotypos_execute_callback() {
+    try {
+        product_transfer_from_dotypos();
+        add_admin_notification('Import produktů z Dotykačky byl úspěšně dokončen.', 'success');
+    } catch (Exception $e) {
+        add_admin_notification('Chyba při importu produktů z Dotykačky: ' . $e->getMessage(), 'error');
+    }
+}
+
+
+//Admin notice
+function add_admin_notification($message, $type = 'success') {
+    update_option('admin_notification', [
+        'message' => sanitize_text_field($message),
+        'type'    => sanitize_text_field($type),
+    ]);
+}
+
+function show_admin_notifications() {
+    $notification = get_option('admin_notification');
+
+    if ($notification) {
+        echo "<div class='notice notice-{$notification['type']} is-dismissible' data-dismissible='admin_notification'>
+                <p>" . _e(esc_html($notification['message']),'dotypos_sync') . "</p>
+              </div>";
+    }
+}
+add_action('admin_notices', 'show_admin_notifications');
+
+function dismiss_admin_notification() {
+    delete_option('admin_notification');
+    wp_die();
+}
+add_action('wp_ajax_dismiss_admin_notification', 'dismiss_admin_notification');
+function enqueue_admin_notification_script() {
+    ?>
+    <script>
+    jQuery(document).ready(function($) {
+        $(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {
+            $.post(ajaxurl, {
+                action: 'dismiss_admin_notification'
+            });
+        });
+    });
+    </script>
+    <?php
+}
+add_action('admin_footer', 'enqueue_admin_notification_script');
+
+
+
+
+
+
 /*
 function dotypos_check_for_updates($transient) {
     static $already_run = false;
@@ -664,4 +828,6 @@ function dotypos_check_for_updates($transient) {
     return $transient;
 }
 add_filter('site_transient_update_plugins', 'dotypos_check_for_updates');
-*/http://localhost/wordpress/wp-admin/admin.php?page=wc-admin&path=/marketing
+http://localhost/wordpress/wp-admin/admin.php?page=wc-admin&path=/marketing
+
+*/

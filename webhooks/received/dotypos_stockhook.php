@@ -1,7 +1,7 @@
 <?php
 
 function dotypos_sync_control_stockhook(WP_REST_Request $request){
-
+    central_logs('Stockhook - dotypos_sync_get_sync_setting ','Start','debug');
     if(dotypos_sync_get_sync_setting('setting_from_dotypos_stockhook') === false){
         central_logs('Stockhook - dotypos_sync_get_sync_setting ','False','debug');
         return;
@@ -47,7 +47,7 @@ foreach($data as $row){ // Procházení dat webhooku
     $new_quantity = $dotypos_stock_data["stock_status"];
 
     //Získání id produktu WooCommerce
-    $woo_product_id = get_product_id_by_sku($sku);
+    $woo_product_id = dotypos_sync_get_product_id_by_sku($sku);
 
     //Kontrola existence id produktu WooCommerce
     if(empty($woo_product_id)){

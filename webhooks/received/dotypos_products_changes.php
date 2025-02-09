@@ -27,6 +27,15 @@ foreach($data as $row){
             $woo_data = wc_get_product($woo_product_id);
             
             if($woo_data){
+
+                $tax_class_slug = '';
+
+                $tax_rates = dotypos_sync_get_taxes_wc();
+                foreach($tax_rates as $key=>$value){
+                    if(($value / 100) + 1 == $dotypos_data["vat"]){
+                        $tax_class_slug = $key;
+                    }
+                }
            
                 $regular_price = $woo_data->get_regular_price();
                 $price = $woo_data->get_price();
@@ -40,14 +49,14 @@ foreach($data as $row){
                             
                             $woo_data->set_regular_price($dotypos_data['plu']);
                             $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug);
+                            $woo_data->set_tax_class($tax_class_slug ? $tax_class_slug : $woo_data->get_tax_class());
                             $woo_data->save();
                             
                     }else{
                         $woo_data->set_regular_price($dotypos_data['price_with_vat']);
                             $woo_data->set_price($dotypos_data['price_with_vat']);
                             $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug);
+                            $woo_data->set_tax_class($tax_class_slug ? $tax_class_slug : $woo_data->get_tax_class());
                             $woo_data->save();
                             
                         }

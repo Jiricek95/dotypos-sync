@@ -71,6 +71,6 @@
 
 <script>
     $(document).ready(function() {
-        jl_getDotyposSettingsCloud();
+        ds_getDotyposSettingsCloud();
     });
 </script>
