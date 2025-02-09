@@ -58,12 +58,12 @@
 
     <div class="operations">
         <h2><?php _e('Přenos produktů z Dotykačky do WooCommerce', 'dotypos_sync'); ?></h2>
-        <button onclick="product_transfer_from_dotypos_action()">
+        <button class="button" onclick="product_transfer_from_dotypos_action()">
             <?php _e('Spustit přenos produktů', 'dotypos_sync'); ?>
         </button>
         <br /><br /><br /><br />
         <h3><?php _e('Přenos stavu skladu z Dotykačky do WooCommerce', 'dotypos_sync'); ?></h3>
-        <button onclick="stock_transfer_from_dotypos_action()">
+        <button class="button" onclick="stock_transfer_from_dotypos_action()">
             <?php _e('Spustit přenos stavu skladu', 'dotypos_sync'); ?>
         </button>
     </div>
