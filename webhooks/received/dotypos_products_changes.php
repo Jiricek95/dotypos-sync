@@ -15,11 +15,12 @@ foreach($data as $row){
         $dotypos_data = [
             'plu'=> isset($row['plu']) ? $row['plu'] : null,
             'vat'=>isset($row['vat']) ? $row['vat'] : null,
-            'price_without_vat' => isset($row['price_without_vat']) ? $row['price_without_vat'] : null,
-            'price_with_vat'=>isset($row['price_with_vat']) ? $row['price_with_vat'] : null,
+            'price_without_vat' => isset($row['pricewithoutvat']) ? $row['pricewithoutvat'] : null,
+            'price_with_vat'=>isset($row['pricewithvat']) ? $row['pricewithvat'] : null,
             'versiondate'=>isset($row['versiondate']) ? $row['versiondate'] : null,
             'name'=>isset($row['name']) ? $row['name'] : null,
         ];
+		
         
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($dotypos_data['plu'])){
@@ -32,10 +33,12 @@ foreach($data as $row){
 
                 $tax_rates = dotypos_sync_get_taxes_wc();
                 foreach($tax_rates as $key=>$value){
-                    if(($value / 100) + 1 == $dotypos_data["vat"]){
+                    if(((float) $value / 100) + 1 == (float)$dotypos_data["vat"]){
+
                         $tax_class_slug = $key;
                     }
                 }
+				
            
                 $regular_price = $woo_data->get_regular_price();
                 $price = $woo_data->get_price();
@@ -43,20 +46,20 @@ foreach($data as $row){
 
                 if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true){
 
-                    if($dotypos_data['price_with_vat'] !== null || $regular_price != $dotypos_data['price_with_vat']){
+                    if($dotypos_data['price_with_vat'] !== null && $regular_price != $dotypos_data['price_with_vat']){
                     
                         if($sale_price != null){
                             
                             $woo_data->set_regular_price($dotypos_data['plu']);
                             $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug ? $tax_class_slug : $woo_data->get_tax_class());
+                            $woo_data->set_tax_class($tax_class_slug);
                             $woo_data->save();
                             
                     }else{
                         $woo_data->set_regular_price($dotypos_data['price_with_vat']);
                             $woo_data->set_price($dotypos_data['price_with_vat']);
                             $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug ? $tax_class_slug : $woo_data->get_tax_class());
+                            $woo_data->set_tax_class($tax_class_slug);
                             $woo_data->save();
                             
                         }
@@ -83,5 +86,6 @@ foreach($data as $row){
             
         }
     }
+	
     
 }
