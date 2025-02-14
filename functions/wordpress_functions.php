@@ -316,7 +316,7 @@ function dotypos_sync_data_sync_to_dotypos($request) {
 
     if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
 
-        $price_without_vat = $regular_price / $dotypos_product_info["vat"];
+        $price_without_vat = (float) $regular_price / (float) $dotypos_product_info["vat"];
 
         $woo_data = [
             "regular_price" => $regular_price ? $regular_price : $dotypos_product_info["price_with_vat"],
