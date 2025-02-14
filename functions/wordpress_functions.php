@@ -316,6 +316,10 @@ function dotypos_sync_data_sync_to_dotypos($request) {
 
     if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
 
+        if((float) $regular_price == (float) $dotypos_product_info['price_with_vat']){//Když se ceny shodují
+            return;
+        }
+
         $price_without_vat = (float) $regular_price / (float) $dotypos_product_info["vat"];
 
         $woo_data = [
@@ -327,7 +331,7 @@ function dotypos_sync_data_sync_to_dotypos($request) {
             "name" => $name ? $name : $dotypos_product_info["name"],
             "vat"=> $product_tax_rate ? $product_tax_rate : $dotypos_product_info["vat"],
         ];
-        
+       
         dotypos_sync_update_product($woo_data);
     }
 
