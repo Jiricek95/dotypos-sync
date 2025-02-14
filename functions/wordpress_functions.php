@@ -244,6 +244,7 @@ function dotypos_sync_product_by_sku($sku) {
 
 //Sync po uložení produktu
 /* === Spouštění synchronizace po uložení produktu === */
+/*
 add_action('save_post_product', 'dotypos_sync_schedule_product_sync', 99, 1);
 
 function dotypos_sync_schedule_product_sync($product_id) {
@@ -277,7 +278,7 @@ function dotypos_sync_handle_product_save_action($product_id) {
     ]);
 }
 
-/* === Registrace REST API endpointu === */
+// === Registrace REST API endpointu === 
 add_action('rest_api_init', function () {
     register_rest_route('dotypos/v1', '/sync-to', [
         'methods'  => 'POST',
@@ -286,7 +287,7 @@ add_action('rest_api_init', function () {
     ]);
 });
 
-/* === Zpracování synchronizace === */
+// === Zpracování synchronizace === 
 function dotypos_sync_data_sync_to_dotypos($request) {
     $params = $request->get_json_params();
     $product_id = $params['product_id'] ?? null;
@@ -355,7 +356,70 @@ function dotypos_sync_data_sync_to_dotypos($request) {
         dotypos_sync_update_product($woo_data);
     }
 }
+*/
+//Získání změny ceny u produktu
+add_action('woocommerce_product_object_updated_props', 'check_regular_price_change_and_get_sku', 10, 2);
 
+function check_regular_price_change_and_get_sku($product, $changed_props) {
+    if (in_array('regular_price', $changed_props)) {
+
+        $sku = $product->get_sku();
+        if (!$product || $product->get_status() != 'publish' || $sku == '') {
+            return;
+        }
+    
+        // Data k synchronizaci
+        $sync_data = [
+            'id' => $product_id,
+            'name' => $product->get_name(),
+            'price' => $product->get_regular_price(),
+            'status' => $product->get_status(),
+            'sku'=>$product->get_sku(),
+            'tax_class'=>$product->get_tax_class(),
+        ];
+    
+        $regular_price = '';
+        $name = '';
+        $price_without_vat = '';
+    
+        if(dotypos_sync_get_sync_setting('setting_from_woo_price') === true){
+            $regular_price = $product->get_regular_price();
+    
+            $product_tax_class = $product->get_tax_class();
+            $product_tax_rate = null;
+            $tax_rates = dotypos_sync_get_taxes_wc();
+            foreach($tax_rates as $key=>$value){
+                if($key == $product_tax_class){
+                    $product_tax_rate = ($value / 100) + 1;
+                }
+            }
+            
+            
+        }
+        if(dotypos_sync_get_sync_setting('setting_from_woo_name') === true){
+            $name = $product->get_name();
+        }
+    
+        $dotypos_product_info = dotypos_sync_dotypos_productid($sku);
+    
+        if(!empty($dotypos_product_info) && $dotypos_product_info !== null){
+    
+            $price_without_vat = $regular_price / $dotypos_product_info["vat"];
+    
+            $woo_data = [
+                "regular_price" => $regular_price ? $regular_price : $dotypos_product_info["price_with_vat"],
+                "sku" => $sku,
+                "dotypos_product_id" => $dotypos_product_info["dotypos_product_id"],
+                "eTag" => $dotypos_product_info["eTag"],
+                "price_without_vat" => $price_without_vat,
+                "name" => $name ? $name : $dotypos_product_info["name"],
+                "vat"=> $product_tax_rate ? $product_tax_rate : $dotypos_product_info["vat"],
+            ];
+            
+            dotypos_sync_update_product($woo_data);
+        }
+}
+}
 function dotypos_sync_get_taxes_wc() {
     global $wpdb;
 
