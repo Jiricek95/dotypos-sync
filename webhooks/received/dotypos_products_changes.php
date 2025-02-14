@@ -25,57 +25,52 @@ foreach($data as $row){
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($dotypos_data['plu'])){
             
-            $woo_data = wc_get_product($woo_product_id);
+            $post_type = get_post_type($woo_product_id);
             
-            if($woo_data){
-
+            if ($post_type === 'product') { // Ověření, že jde o produkt
+            
+                // Získání cen z postmeta
+                $regular_price = get_post_meta($woo_product_id, '_regular_price', true);
+                $price = get_post_meta($woo_product_id, '_price', true);
+                $sale_price = get_post_meta($woo_product_id, '_sale_price', true);
+            
+                // Výpočet daňové třídy
                 $tax_class_slug = '';
-
                 $tax_rates = dotypos_sync_get_taxes_wc();
-                foreach($tax_rates as $key=>$value){
-                    if(((float) $value / 100) + 1 == (float)$dotypos_data["vat"]){
-
+                foreach ($tax_rates as $key => $value) {
+                    if (((float) $value / 100) + 1 == (float) $dotypos_data["vat"]) {
                         $tax_class_slug = $key;
                     }
                 }
-				
-           
-                $regular_price = $woo_data->get_regular_price();
-                $price = $woo_data->get_price();
-                $sale_price = $woo_data->get_sale_price();
-
-                if(dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true){
-
-                    if($dotypos_data['price_with_vat'] !== null && $regular_price != $dotypos_data['price_with_vat']){
-                    
-                        if($sale_price != null){
-                            
-                            $woo_data->set_regular_price($dotypos_data['plu']);
-                            $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug);
-                            $woo_data->save();
-                            
-                    }else{
-                        $woo_data->set_regular_price($dotypos_data['price_with_vat']);
-                            $woo_data->set_price($dotypos_data['price_with_vat']);
-                            $woo_data->set_tax_status('taxable');
-                            $woo_data->set_tax_class($tax_class_slug);
-                            $woo_data->save();
-                            
+            
+                // Synchronizace ceny z Dotykačky
+                if (dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true) {
+                    if ($dotypos_data['price_with_vat'] !== null && $regular_price != $dotypos_data['price_with_vat']) {
+            
+                        if ($sale_price != null) {
+                            update_post_meta($woo_product_id, '_regular_price', $dotypos_data['price_with_vat']);
+                            update_post_meta($woo_product_id, '_tax_status', 'taxable');
+                            update_post_meta($woo_product_id, '_tax_class', $tax_class_slug);
+                        } else {
+                            update_post_meta($woo_product_id, '_regular_price', $dotypos_data['price_with_vat']);
+                            update_post_meta($woo_product_id, '_price', $dotypos_data['price_with_vat']);
+                            update_post_meta($woo_product_id, '_tax_status', 'taxable');
+                            update_post_meta($woo_product_id, '_tax_class', $tax_class_slug);
                         }
-                        
                     }
-                   
-                    }
-
-                    if(dotypos_sync_get_sync_setting('setting_from_dotypos_name') === true){
-
-                        $woo_data->set_name($dotypos_data['name']);
-                        $woo_data->save();
-
-                        }
-                       
-                        }
+                }
+            
+                // Synchronizace názvu produktu
+                if (dotypos_sync_get_sync_setting('setting_from_dotypos_name') === true) {
+                    wp_update_post([
+                        'ID'         => $woo_product_id,
+                        'post_title' => $dotypos_data['name']
+                    ]);
+                }
+            
+                // Vyčištění cache produktu
+                clean_post_cache($woo_product_id);
+            }
                 
 
 

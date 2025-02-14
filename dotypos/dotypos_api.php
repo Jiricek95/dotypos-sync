@@ -524,6 +524,7 @@ function dotypos_sync_update_product($post_data){
     $priceWithoutVat = $post_data["price_without_vat"] ? $post_data["price_without_vat"] : null;
     $eTag = $post_data["eTag"] ? $post_data["eTag"] : null;
     $name = $post_data["name"];
+    $vat = $post_data["vat"];
 
     if($dotypos_product_id != null || $eTag != null){
         $access_token_data = dotypos_sync_getDotyposAccessToken();
@@ -538,6 +539,7 @@ function dotypos_sync_update_product($post_data){
                 "priceWithoutVat" => $priceWithoutVat,
                 "priceWithVat" => $priceWithVat,
                 "name"=>$name,
+                "vat" => $vat
             ];
     
     if($request_url != null || $request_body_pre != null){
