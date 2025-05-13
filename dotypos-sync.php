@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.42
+ * @version       2.0.43
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.42
+ * Version:       2.0.43
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.42");
+define("DOTYPOSSYNC_VERSION", "2.0.43");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -506,9 +506,10 @@ function dotypos_activate_debug_logs(WP_REST_Request $request) {
     // Získání JSON dat
     $data = $request->get_json_params();
 
-    if (!$data || empty($data['debug_logs'])) {
+    if (!$data || !array_key_exists('debug_logs', $data) || is_null($data['debug_logs'])) {
         return new WP_REST_Response(['error' => 'Bad JSON'], 400);
     }
+    
 
     // Vložení nebo aktualizace hodnoty v databázi
     $sql = $wpdb->prepare(
@@ -550,7 +551,7 @@ function central_logs($text,$content,$mode){
 
         $logger = wc_get_logger();
         $context = array( 'source' => 'dotypos-j-l' );
-        $logger->log( 'info', $text .' - '. $content, $context );
+        $logger->log( 'Info', $text .' - '. $content, $context );
 
     }
 }
@@ -739,16 +740,16 @@ function dismiss_admin_notification() {
 add_action('wp_ajax_dismiss_admin_notification', 'dismiss_admin_notification');
 function enqueue_admin_notification_script() {
     ?>
-    <script>
-    jQuery(document).ready(function($) {
-        $(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {
-            $.post(ajaxurl, {
-                action: 'dismiss_admin_notification'
-            });
+<script>
+jQuery(document).ready(function($) {
+    $(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {
+        $.post(ajaxurl, {
+            action: 'dismiss_admin_notification'
         });
     });
-    </script>
-    <?php
+});
+</script>
+<?php
 }
 add_action('admin_footer', 'enqueue_admin_notification_script');
 
