@@ -64,18 +64,49 @@ foreach($data as $row){ // Procházení dat webhooku
         return;
     }
 
+    //Získaání starého množství je pro logování
+    $old_quantity = $woo_product_data->get_stock_quantity();
+
     //Uložení nových dat
             // Nastavení správy zásob na true
             $set_stock_manage = $woo_product_data->set_manage_stock(true);
             // Nastaví nové množství na skladě a uloží změny
             $set_new_stock = $woo_product_data->set_stock_quantity($new_quantity);
             $save_products = $woo_product_data->save();
+
+            // Kontrola, zda je aktivní WPML a existuje překlad
+if (function_exists('wpml_get_content_translation') && function_exists('icl_object_id')) {
+
+    // Získání všech jazyků (překladů)
+    $translations = apply_filters('wpml_get_element_translations', null, apply_filters('wpml_element_trid', null, $woo_product_id, 'post_product'), 'post_product');
+
+    if (!empty($translations) && is_array($translations)) {
+        foreach ($translations as $lang => $translated_post) {
+            // Přeskočíme originál
+            if ((int)$translated_post->element_id === (int)$woo_product_id) {
+                continue;
+            }
+
+            // Načteme přeložený produkt
+            $translated_product = wc_get_product($translated_post->element_id);
+
+            if ($translated_product) {
+                $translated_product->set_manage_stock(true);
+                $translated_product->set_stock_quantity($new_quantity);
+                $translated_product->save();
+            }
+        }
+    }
+}
      
             $request_body = [
                 "sku" => $sku,
-                "quantity" => $quantity,
+                "old_quantity" => $old_quantity,
                 "new_quantity" => $new_quantity
             ];
+
+            central_logs('Stockhook ',json_encode($request_body,true),'');
+
 
     }
 }

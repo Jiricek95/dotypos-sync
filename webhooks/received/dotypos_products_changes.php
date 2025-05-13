@@ -29,11 +29,9 @@ foreach($data as $row){
             
             if ($post_type === 'product') { // Ověření, že jde o produkt
             
-                // Získání cen z postmeta
-                $regular_price = get_post_meta($woo_product_id, '_regular_price', true);
-                $price = get_post_meta($woo_product_id, '_price', true);
-                $sale_price = get_post_meta($woo_product_id, '_sale_price', true);
-            
+                $product = wc_get_product($woo_product_id);
+                if (!$product) return;
+                
                 // Výpočet daňové třídy
                 $tax_class_slug = '';
                 $tax_rates = dotypos_sync_get_taxes_wc();
@@ -42,23 +40,52 @@ foreach($data as $row){
                         $tax_class_slug = $key;
                     }
                 }
-            
+                
                 // Synchronizace ceny z Dotykačky
                 if (dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true) {
-                    if ($dotypos_data['price_with_vat'] !== null && $regular_price != $dotypos_data['price_with_vat']) {
-            
-                        if ($sale_price != null) {
-                            update_post_meta($woo_product_id, '_regular_price', $dotypos_data['price_with_vat']);
-                            update_post_meta($woo_product_id, '_tax_status', 'taxable');
-                            update_post_meta($woo_product_id, '_tax_class', $tax_class_slug);
-                        } else {
-                            update_post_meta($woo_product_id, '_regular_price', $dotypos_data['price_with_vat']);
-                            update_post_meta($woo_product_id, '_price', $dotypos_data['price_with_vat']);
-                            update_post_meta($woo_product_id, '_tax_status', 'taxable');
-                            update_post_meta($woo_product_id, '_tax_class', $tax_class_slug);
+                    $new_price = (float) $dotypos_data['price_with_vat'];
+                    $current_regular = (float) $product->get_regular_price();
+                
+                    if ($new_price !== $current_regular) {
+                        $product->set_regular_price($new_price);
+                        $product->set_price($new_price); // pokud není sleva, nastavíme i běžnou cenu
+                        $product->set_sale_price(''); // zrušíme případnou slevu – nebo nastav, pokud máš
+                        $product->set_tax_status('taxable');
+                        $product->set_tax_class($tax_class_slug);
+                        $product->save();
+
+
+
+
+                        if (function_exists('wpml_get_content_translation') && function_exists('icl_object_id')) {
+                        
+                            $translations = apply_filters('wpml_get_element_translations', null, apply_filters('wpml_element_trid', null, $woo_product_id, 'post_product'), 'post_product');
+                        
+                            if (!empty($translations) && is_array($translations)) {
+                                foreach ($translations as $lang => $translated_post) {
+                                    if ((int)$translated_post->element_id === (int)$woo_product_id) {
+                                        continue;
+                                    }
+                        
+                                    $translated_product = wc_get_product($translated_post->element_id);
+                                    if ($translated_product) {
+                                        $translated_product->set_regular_price($new_price);
+                                        $translated_product->set_price($new_price);
+                                        $translated_product->set_sale_price('');
+                                        $translated_product->set_tax_status('taxable');
+                                        $translated_product->set_tax_class($tax_class_slug);
+                                        $translated_product->save();
+                                    }
+                                }
+                            }
                         }
+                        
+
+
+
                     }
                 }
+                
             
                 // Synchronizace názvu produktu
                 if (dotypos_sync_get_sync_setting('setting_from_dotypos_name') === true) {
