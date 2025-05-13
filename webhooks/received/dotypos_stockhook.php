@@ -105,7 +105,7 @@ if (function_exists('wpml_get_content_translation') && function_exists('icl_obje
                 "new_quantity" => $new_quantity
             ];
 
-            central_logs('Stockhook ',json_encode($request_body,true),'');
+            central_logs('Stockhook ',json_encode($request_body,true),'info');
 
 
     }
