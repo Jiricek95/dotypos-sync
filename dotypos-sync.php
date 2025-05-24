@@ -96,7 +96,7 @@ function dotypos_sync_install_database(){
             DOTYPOSSYNC_TABLE_NAME .
             "(
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            `key` TEXT NOT NULL,
+            `key` VARCHAR(191) NOT NULL UNIQUE,
             `value` TEXT NOT NULL,
             created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
@@ -570,12 +570,27 @@ function save_checkbox_setting() {
 
     // Zápis do databáze
     $table_name = DOTYPOSSYNC_TABLE_NAME; // Vaše tabulka
-    $result = $wpdb->replace(
-        $table_name,
-        ['key' => $data_id, 'value' => $value],
-        ['%s', '%d']
-    );
-
+    $exists = $wpdb->get_var($wpdb->prepare(
+        "SELECT id FROM $table_name WHERE `key` = %s",
+        $data_id
+    ));
+    
+    if ($exists) {
+        $result = $wpdb->update(
+            $table_name,
+            ['value' => $value],
+            ['key' => $data_id],
+            ['%s'],
+            ['%s']
+        );
+    } else {
+        $result = $wpdb->insert(
+            $table_name,
+            ['key' => $data_id, 'value' => $value],
+            ['%s', '%s']
+        );
+    }
+    
     if ($result !== false) {
         wp_send_json_success();
     } else {
@@ -833,3 +848,69 @@ add_filter('site_transient_update_plugins', 'dotypos_check_for_updates');
 http://localhost/wordpress/wp-admin/admin.php?page=wc-admin&path=/marketing
 
 */
+
+
+/*Funkce pro opravu DB pro verzi 2.0.45 a v další verzi opět odebrat */
+add_action('wp_ajax_repair_duplicate_keys_jl', 'repair_duplicate_keys_jl');
+function repair_duplicate_keys_jl() {
+    global $wpdb;
+    $table_name = DOTYPOSSYNC_TABLE_NAME;
+
+    // 1. Odstranit duplicitní `key`, ponechat jen nejnovější záznam
+    $duplicate_keys = $wpdb->get_col("
+        SELECT `key`
+        FROM $table_name
+        GROUP BY `key`
+        HAVING COUNT(*) > 1
+    ");
+
+    foreach ($duplicate_keys as $key) {
+        $rows = $wpdb->get_results($wpdb->prepare("
+            SELECT id
+            FROM $table_name
+            WHERE `key` = %s
+            ORDER BY `updated` DESC
+        ", $key));
+
+        if (count($rows) <= 1) continue;
+
+        $ids_to_delete = array_map(fn($row) => (int)$row->id, array_slice($rows, 1));
+
+        if (!empty($ids_to_delete)) {
+            $placeholders = implode(',', array_fill(0, count($ids_to_delete), '%d'));
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM $table_name WHERE id IN ($placeholders)",
+                ...$ids_to_delete
+            ));
+        }
+    }
+
+    // 2. Zjistit, jestli `key` není typu VARCHAR – pokud ne, změnit na VARCHAR(191)
+    $column_type = $wpdb->get_var("
+        SELECT DATA_TYPE
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_schema = DATABASE()
+          AND table_name = '{$table_name}'
+          AND column_name = 'key'
+    ");
+
+    if (strtolower($column_type) !== 'varchar') {
+        $wpdb->query("ALTER TABLE $table_name MODIFY `key` VARCHAR(191) NOT NULL");
+    }
+
+    // 3. Zkontrolovat existenci UNIQUE indexu na `key`
+    $has_unique = $wpdb->get_var("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE table_schema = DATABASE()
+          AND table_name = '{$table_name}'
+          AND column_name = 'key'
+          AND non_unique = 0
+    ");
+
+    if (!$has_unique) {
+        $wpdb->query("ALTER TABLE $table_name ADD UNIQUE KEY `unique_key` (`key`)");
+    }
+
+    return 'Duplicitní záznamy odstraněny a struktura tabulky opravena.';
+}

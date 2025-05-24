@@ -20,18 +20,22 @@ foreach($data as $row){
             'versiondate'=>isset($row['versiondate']) ? $row['versiondate'] : null,
             'name'=>isset($row['name']) ? $row['name'] : null,
         ];
+
 		
         
         //Woo data
         if($woo_product_id = dotypos_sync_get_product_id_by_sku($dotypos_data['plu'])){
             
             $post_type = get_post_type($woo_product_id);
+
+            $post_type_allowed = ['product','product_variation'];
             
-            if ($post_type === 'product') { // Ověření, že jde o produkt
+            if (in_array($post_type,$post_type_allowed)) { // Ověření, že jde o produkt
             
                 $product = wc_get_product($woo_product_id);
                 if (!$product) return;
-                
+
+
                 // Výpočet daňové třídy
                 $tax_class_slug = '';
                 $tax_rates = dotypos_sync_get_taxes_wc();
@@ -41,6 +45,20 @@ foreach($data as $row){
                     }
                 }
                 
+                $oldData = [
+                    "price" => (float) ($product ? $product->get_regular_price() : null),
+                    "tax_slug" => $product ? $product->get_tax_class() : null
+                ];
+                
+                $newData = [
+                    "price" => isset($dotypos_data['price_with_vat']) ? (float) $dotypos_data['price_with_vat'] : null,
+                    "tax_slug" => isset($tax_class_slug, $dotypos_data["vat"])
+                        ? $tax_class_slug . " (" . (float) $dotypos_data["vat"] . ")"
+                        : null
+                ];
+                
+                
+
                 // Synchronizace ceny z Dotykačky
                 if (dotypos_sync_get_sync_setting('setting_from_dotypos_price') === true) {
                     $new_price = (float) $dotypos_data['price_with_vat'];
@@ -81,6 +99,7 @@ foreach($data as $row){
                         }
                         
 
+                        central_logs("Změna u produktu -> ". $dotypos_data["plu"][0], "Nová data -> " . json_encode($newData,true) . " \n Stará data -> " . json_encode($oldData,true), "info");
 
 
                     }
@@ -111,3 +130,56 @@ foreach($data as $row){
 	
     
 }
+
+/*
+function dotypos_sync_update_price_by_sku($sku, $new_price, $tax_class_slug = '') {
+    if (!$sku || !is_numeric($new_price)) {
+        return;
+    }
+
+    // Najdi produkt/variantu podle SKU
+    $product_id = wc_get_product_id_by_sku($sku);
+    if (!$product_id) return;
+
+    $product = wc_get_product($product_id);
+    if (!$product) return;
+
+    // Pokud cena není rozdílná, nic nedělej
+    $current_regular = (float)$product->get_regular_price();
+    if ((float)$new_price === $current_regular) return;
+
+    // Nastavení ceny
+    $product->set_regular_price($new_price);
+    $product->set_price($new_price);
+    $product->set_sale_price(''); // Zruší sleva
+    $product->set_tax_status('taxable');
+    if (!empty($tax_class_slug)) {
+        $product->set_tax_class($tax_class_slug);
+    }
+    $product->save();
+
+    // Aktualizace překladu, pokud existuje WPML
+    if (function_exists('wpml_get_content_translation') && function_exists('icl_object_id')) {
+        $trid = apply_filters('wpml_element_trid', null, $product_id, 'post_product');
+        $translations = apply_filters('wpml_get_element_translations', null, $trid, 'post_product');
+
+        if (!empty($translations) && is_array($translations)) {
+            foreach ($translations as $lang => $translated_post) {
+                if ((int)$translated_post->element_id === (int)$product_id) continue;
+
+                $translated_product = wc_get_product($translated_post->element_id);
+                if ($translated_product) {
+                    $translated_product->set_regular_price($new_price);
+                    $translated_product->set_price($new_price);
+                    $translated_product->set_sale_price('');
+                    $translated_product->set_tax_status('taxable');
+                    if (!empty($tax_class_slug)) {
+                        $translated_product->set_tax_class($tax_class_slug);
+                    }
+                    $translated_product->save();
+                }
+            }
+        }
+    }
+}
+    */
