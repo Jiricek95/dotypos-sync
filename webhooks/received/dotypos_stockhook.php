@@ -29,6 +29,8 @@ foreach($data as $row){ // Procházení dat webhooku
         return;
     }
 
+    sleep(10); //Pozastavení kvůli pomalosti na straně Dotykačky
+
     //Získání id produktu z webhooku
     $product_id = $row['product_id'];   
 
