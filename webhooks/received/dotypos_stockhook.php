@@ -53,7 +53,7 @@ foreach($data as $row){ // Procházení dat webhooku
 
     //Kontrola existence id produktu WooCommerce
     if(empty($woo_product_id)){
-        central_logs('Stockhook ','No existing woo product id for SKU - '.$row["sku"],'debug');
+        central_logs('Stockhook ','No existing woo product id for SKU - '.json_encode($sku,true),'debug');
         continue;
     }
 
