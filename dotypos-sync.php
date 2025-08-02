@@ -4,13 +4,13 @@
  *
  * @package       DOTYPOSSYNC
  * @author        Jiří Liška
- * @version       2.0.47
+ * @version       2.0.65
  *
  * @wordpress-plugin
  * Plugin Name:   DotyPos sync
  * Plugin URI:    https://liskajiri.cz/dotypos_woo_sync
  * Description:   Doplněk umožňující synchronizaci produktů mezi WooCommerce a Dotykačkou
- * Version:       2.0.47
+ * Version:       2.0.65
  * Author:        Jiří Liška
  * Author URI:    https://liskajiri.cz
  * Text Domain:   dotypos-sync
@@ -23,7 +23,7 @@ if (!defined("ABSPATH")) {
 }
 
 // Define plugin version (for internal use)
-define("DOTYPOSSYNC_VERSION", "2.0.47");
+define("DOTYPOSSYNC_VERSION", "2.0.65");
 
 // Plugin Root File
 define("DOTYPOSSYNC_PLUGIN_FILE", __FILE__);
@@ -497,7 +497,30 @@ add_action('rest_api_init', function () {
         'callback' => 'dotypos_activate_debug_logs',
         'permission_callback' => '__return_true',
     ]);
+
+    // Endpoint pro získání nastavení
+    register_rest_route('dotypos/v1', '/get-settings/', [
+        'methods' => 'POST',
+        'callback' => 'dotypos_sync_get_settings',
+        'permission_callback' => '__return_true',
+    ]);
 });
+
+//Funkce pro získání nastavení
+function dotypos_sync_get_settings(WP_REST_Request $request) {
+    $expected_auth_key = '_qi87R2Qsa7$ylRq'; 
+
+    $provided_auth_key = $request->get_param('auth_key');
+
+    // Kontrola, zda se dodaný klíč shoduje s očekávaným
+    if (empty($provided_auth_key) || $provided_auth_key !== $expected_auth_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized. Invalid or missing authentication key.'], 401);
+    }
+
+    $data = dotypos_sync_get_all_setting();
+    return new WP_REST_Response(['status' => 'success', 'data' => json_decode($data)], 200); 
+
+}
 
 // 🔹 Funkce pro zapnutí logování
 function dotypos_activate_debug_logs(WP_REST_Request $request) {
@@ -681,25 +704,41 @@ function dotypos_sync_get_sync_setting($setting_key){
 
 }
 
+
+function dotypos_sync_get_all_setting() {
+    global $wpdb;
+
+    // Získání všech řádků z tabulky.
+    $results = $wpdb->get_results("SELECT * FROM " . DOTYPOSSYNC_TABLE_NAME);
+
+    // Kontrola, zda byly nalezeny nějaké výsledky.
+    if (!empty($results)) {
+        return json_encode($results, JSON_UNESCAPED_UNICODE);
+    } else {
+        return json_encode([]);
+    }
+}
+
+
 //Přenos stavu skladu
 add_action('wp_ajax_stock_transfer_from_dotypos_action', 'plan_stock_transfer_from_dotypos');
 function plan_stock_transfer_from_dotypos() {
 
-    // Action
-    as_schedule_single_action( time(), 'stock_transfer_from_dotypos_execute');
+// Action
+as_schedule_single_action( time(), 'stock_transfer_from_dotypos_execute');
 
-    // Odpověď pro AJAX volání
-    wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
+// Odpověď pro AJAX volání
+wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
 }
 //Spuštění funkce cronem
 add_action('stock_transfer_from_dotypos_execute', 'stock_transfer_from_dotypos_execute_callback');
 function stock_transfer_from_dotypos_execute_callback() {
-    try {
-        stock_transfer_from_dotypos();
-        add_admin_notification('Synchronizace skladu z Dotykačky byla úspěšně dokončena.', 'success');
-    } catch (Exception $e) {
-        add_admin_notification('Chyba při synchronizaci skladu z Dotykačky: ' . $e->getMessage(), 'error');
-    }
+try {
+stock_transfer_from_dotypos();
+add_admin_notification('Synchronizace skladu z Dotykačky byla úspěšně dokončena.', 'success');
+} catch (Exception $e) {
+add_admin_notification('Chyba při synchronizaci skladu z Dotykačky: ' . $e->getMessage(), 'error');
+}
 }
 
 
@@ -709,52 +748,52 @@ function stock_transfer_from_dotypos_execute_callback() {
 add_action('wp_ajax_product_transfer_from_dotypos_action', 'plan_product_transfer_from_dotypos');
 function plan_product_transfer_from_dotypos() {
 
-    // Action
-    as_schedule_single_action( time(), 'product_transfer_from_dotypos_execute');
+// Action
+as_schedule_single_action( time(), 'product_transfer_from_dotypos_execute');
 
-    // Odpověď pro AJAX volání
-    wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
+// Odpověď pro AJAX volání
+wp_send_json_success( array( 'message' => 'Úloha byla naplánována.' ) );
 }
 //Hook, který spouští cron
 add_action( 'product_transfer_from_dotypos_execute', 'product_transfer_from_dotypos_execute_callback' );
 //Spuštění funkce cronem
 function product_transfer_from_dotypos_execute_callback() {
-    try {
-        product_transfer_from_dotypos();
-        add_admin_notification('Import produktů z Dotykačky byl úspěšně dokončen.', 'success');
-    } catch (Exception $e) {
-        add_admin_notification('Chyba při importu produktů z Dotykačky: ' . $e->getMessage(), 'error');
-    }
+try {
+product_transfer_from_dotypos();
+add_admin_notification('Import produktů z Dotykačky byl úspěšně dokončen.', 'success');
+} catch (Exception $e) {
+add_admin_notification('Chyba při importu produktů z Dotykačky: ' . $e->getMessage(), 'error');
+}
 }
 
 
 //Admin notice
 function add_admin_notification($message, $type = 'success') {
-    update_option('admin_notification', [
-        'message' => sanitize_text_field($message),
-        'type'    => sanitize_text_field($type),
-    ]);
+update_option('admin_notification', [
+'message' => sanitize_text_field($message),
+'type' => sanitize_text_field($type),
+]);
 }
 
 function show_admin_notifications() {
-    $notification = get_option('admin_notification');
+$notification = get_option('admin_notification');
 
-    if ($notification) {
-        echo "<div class='notice notice-{$notification['type']} is-dismissible' data-dismissible='admin_notification'>
-                <p>" . esc_html__( $notification['message'], 'dotypos_sync' ) . "</p>
-              </div>";
-    }
-    
+if ($notification) {
+echo "<div class='notice notice-{$notification[' type']} is-dismissible' data-dismissible='admin_notification'>
+    <p>" . esc_html__( $notification['message'], 'dotypos_sync' ) . "</p>
+</div>";
+}
+
 }
 add_action('admin_notices', 'show_admin_notifications');
 
 function dismiss_admin_notification() {
-    delete_option('admin_notification');
-    wp_die();
+delete_option('admin_notification');
+wp_die();
 }
 add_action('wp_ajax_dismiss_admin_notification', 'dismiss_admin_notification');
 function enqueue_admin_notification_script() {
-    ?>
+?>
 <script>
 jQuery(document).ready(function($) {
     $(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {

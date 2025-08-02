@@ -23,10 +23,10 @@ foreach($data as $row){ // Procházení dat webhooku
     //Podmínka kontroly poznámky a čísla dodacího listu a ukončení zpracování
     if(preg_match("/WooCommerce/",$note)){
         central_logs('Stockhook ','Note is WooCommerce','debug');
-        return;
+        continue;
     }elseif(preg_match("/WooCommerce/",$row['invoicenumber'])){
         central_logs('Stockhook ','Invoice Number is WooCommerce','debug');
-        return;
+        continue;
     }
 
     sleep(10); //Pozastavení kvůli pomalosti na straně Dotykačky
@@ -41,7 +41,7 @@ foreach($data as $row){ // Procházení dat webhooku
     if(empty($dotypos_stock_data) || $dotypos_stock_data["plu"] == null){
         central_logs('Stockhook ','No existing dotypos_stock_data and PLU','debug');
         central_logs('Stockhook Dotypos stock data',json_encode($dotypos_stock_data,true),'debug');
-        return;
+        continue;
     }
 
     //Získání jednotlivých dat
@@ -53,8 +53,8 @@ foreach($data as $row){ // Procházení dat webhooku
 
     //Kontrola existence id produktu WooCommerce
     if(empty($woo_product_id)){
-        central_logs('Stockhook ','No existing woo product id','debug');
-        return;
+        central_logs('Stockhook ','No existing woo product id for SKU - '.$sku,'debug');
+        continue;
     }
 
     //Získání dat o produktu WooCommerce
@@ -63,7 +63,7 @@ foreach($data as $row){ // Procházení dat webhooku
     //Kontrola existence dat o produktu WooCommerce
     if(empty($woo_product_data)){
         central_logs('Stockhook ','No existing woo data','debug');
-        return;
+        continue;
     }
 
     //Získaání starého množství je pro logování
