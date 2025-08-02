@@ -1,25 +1,14 @@
 <?php
-
-function stock_transfer_from_dotypos()
-{
-    central_logs("Start", "", "info");
     $productsToChange = [];
     $i = 0;
     $p = 0;
-    $access_token_data = dotypos_sync_getDotyposAccessToken();
-
-    if ($access_token_data) {
 
         $page = 1;
 
         do {
 
             $request_url =
-            "https://api.dotykacka.cz/v2/clouds/" .
-            $access_token_data["cloudid"] .
-            "/warehouses/" .
-            $access_token_data["warehouse_id"] .
-            "/products?page=".$page."&limit=100&filter=deleted%7Ceq%7Cfalse&sort=id";
+            "https://api.dotykacka.cz/v2/clouds/399909622/warehouses/182944383/products?page=".$page."&limit=100&filter=deleted%7Ceq%7Cfalse&sort=name";
 
             $curl = curl_init();
 
@@ -35,8 +24,7 @@ function stock_transfer_from_dotypos()
                 CURLOPT_HTTPHEADER => [
                     "Accept: application/json; charset=UTF-8",
                     "Content-Type: application/json; charset=UTF-8",
-                    "Authorization: Bearer " .
-                    $access_token_data["access_token"],
+                    "Authorization: Bearer eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM4ODk3MDEsInN1YiI6ImppcmkubGlza2FAZG90eWthY2thLmN6IiwidmVyc2lvbiI6MSwidXNlci1pZCI6MjEwMzM0OCwidG9rZW4taWQiOjE2ODE3OTEwODk3NzIwNzksImFjY2VzcyI6eyJjbG91ZC1pZHMiOlszOTk5MDk2MjJdLCJhY3RpdmUiOnsiY2xvdWQtaWQiOjM5OTkwOTYyMiwicGVybWlzc2lvbnMiOiJmMzkvZjM5L2YzOS9mLy8vLzM5L2YzLy9mZjkvLzM5L2YzOS8vMzkvZi8vLy8zOS8vMy8vZjM5L2YvOS8vMzkvZjMvLy8vLy8vLy8vZjM4QWYzOS9mMzkvZjMvL2YvOS8vMy8vZi85Ly8vLy9mLy8vLzMvLy8vOS8vLy8vLy8vLy8zLy8vLy8vLy8vLyJ9fSwiY2xpZW50LWlkIjoic3RvY2t1ai5jeiIsInJvbGVzIjpbIlJPTEVfVVNFUiIsIlJPTEVfQURNSU4iLCJST0xFX1NVUEVSX0FETUlOIiwiUk9MRV9BRE1JTklTVFJBVElWRSJdfQ.QLUs8TgImH1GXRJLe0Qf3SH2T5s3_2E1hwxIIw4jbnyF1Hd-afND_Kr1gGodvfmRd1PF6MyyxxorT1HwM1SoHIgmTYZGSuoAy-Q2W_Om2COWUAPI7ELQPPblv1oXMAVeYqx7fG0u2Hj8a6cGxD1y5rUnjmGqqFKiB2_HxFCl6b173hcCI-3XtffJ8KaENp7q4GK2WqMLi47EIcliX7_FoLUy795CBIVvRw3jTWzQIDJhuML1IxcJ5jdvG-A6TIHQN1d7yRW1uIk5g6Kwxx_2xNWWy3RwrGcLYBY90f3X_HJAkdOuKxwZam75enGVS58xt7ztEys671bPmYBwNnMUHg",
                 ],
             ]);
 
@@ -75,39 +63,8 @@ function stock_transfer_from_dotypos()
                 }
             } else {
             }
-
             $i++;
-            central_logs($i . " -> " . $p . 'NextPage -> '.$next_page . ' / CurrentPage -> '.$current_page, "", "info");
-
+            echo "Dávka: ".$i . "Počet produktů: ".$data["totalItemsOnPage"] . "<br />";
         } while (!is_null($next_page));
 
-        curl_close($curl);
-
-        products_stock_update($productsToChange);
-    }
-}
-
-
-function products_stock_update($data){
-
-    if($data){
-
-        foreach($data as $row){
-
-        if($woo_product_id = dotypos_sync_get_product_id_by_sku($row["sku"])){
-            
-            $woo_products = wc_get_product($woo_product_id);
-           //Načte daný produkt
-
-           central_logs('Change -> '.$woo_product_id,'','info');
-           
-                    // Nastavení správy zásob na true
-                   $woo_products->set_manage_stock(true);
-                   // Nastaví nové množství na skladě a uloží změny
-                  $woo_products->set_stock_quantity($row["quantity"]);
-                $woo_products->save();
-        }
-    }
-    }
-
-}
+?>

@@ -415,11 +415,13 @@ curl_close($curl);
 
 function dotypos_sync_send_stock_dotypos($post_data){
 
-$dotypos_product_id = $post_data["dotypos_product_id"] ? $post_data["dotypos_product_id"] : null;
-$quantity = $post_data["quantity"] ? $post_data["quantity"] : null;
-$purchase_price = $post_data["purchase_price"] ? $post_data["purchase_price"] : null;
-$operation = $post_data["operation"] ? $post_data["operation"] : null;
-$note = $post_data["note"] ? $post_data["note"] : null;
+    central_logs('dotypos_sync_send_stock_dotypos Start -> '. json_encode($post_data,true), '','info');
+
+$dotypos_product_id = isset($post_data["dotypos_product_id"]) ? $post_data["dotypos_product_id"] : null;
+$quantity = isset($post_data["quantity"]) ? $post_data["quantity"] : null;
+$purchase_price = isset($post_data["purchase_price"]) ? $post_data["purchase_price"] : null;
+$operation = isset($post_data["operation"]) ? $post_data["operation"] : null;
+$note = isset($post_data["note"]) ? $post_data["note"] : null;
 
  $request_url = null;
  $request_body_pre = null;
@@ -448,7 +450,9 @@ $request_body_pre = [
 
         }
 
-        if($operation == "sale"){
+if($operation == "sale"){
+
+    central_logs('dotypos_sync_send_stock_dotypos Operation -> '. $operation, '','info');
 
 $request_url = 'https://api.dotykacka.cz/v2/clouds/'.$data["cloudid"].'/warehouses/'.$data["warehouse_id"].'/sales';
 
@@ -465,10 +469,11 @@ $request_body_pre = [
         }
 
 
-
 if($request_url != null || $request_body_pre != null){
 
 
+central_logs('dotypos_sync_send_stock_dotypos request_url -> '. $request_url, '','info');
+central_logs('dotypos_sync_send_stock_dotypos request_body_pre -> '. json_encode($request_body_pre,true), '','info');
     
     $request_body = json_encode($request_body_pre,true);
 
@@ -493,10 +498,9 @@ if($request_url != null || $request_body_pre != null){
     ));
     
     $response = curl_exec($curl);
-    
-    curl_close($curl);
     $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    central_logs("Odpověď funkce dotypos_sync_send_stock_dotypos() - \n Request -> {$request_url} \n Request body -> {$request_body} \n Response -> {$response} \n Status code -> {$status_code}","","debug");  
+    
+    central_logs("Odpověď funkce dotypos_sync_send_stock_dotypos() - \n Request -> {$request_url} \n Request body -> {$request_body} \n Response -> {$response} \n Status code -> {$status_code}","","info");  
 
     if($status_code == 200){
 
@@ -508,7 +512,7 @@ if($request_url != null || $request_body_pre != null){
         
 
     }
-
+curl_close($curl);
 }
 
 

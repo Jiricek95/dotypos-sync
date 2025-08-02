@@ -9,10 +9,12 @@ function process_order_items($order) {
     global $wpdb;
     global $processing_order;
 
+central_logs('process_order_items Start -> '. $order, '','info');
+
 if(dotypos_sync_get_sync_setting('setting_from_woo_stockhook') === false){
 return;
 }
-
+central_logs('process_order_items Sync is allowed -> '. $order, '','info');
     $processing_order = true; // Nastavení flagu na true
 
     // Kontrola, zda je $order objekt nebo ID

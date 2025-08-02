@@ -113,5 +113,3 @@ update_post_meta( $post_id, '_tax_class', $tax_class_slug );
 
 
 }
-
-
